@@ -45,7 +45,7 @@ function ContentPaneOne() {
 			paddingRight={4}
 		>
 			<Gradient name={'retro'}>
-				<BigText text={'Pane 1'} />
+				<BigText text={'Gilfoyle'} />
 			</Gradient>
 			<Text>I'm the first content area</Text>
 		</Box>
