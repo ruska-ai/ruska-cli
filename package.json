@@ -1,5 +1,5 @@
 {
-	"name": "gilfoyle",
+	"name": "shell",
 	"version": "0.0.0",
 	"license": "MIT",
 	"bin": "dist/cli.js",
@@ -8,62 +8,54 @@
 		"node": ">=16"
 	},
 	"scripts": {
+		"start": "npm run build && node dist/cli.js",
+		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && eslint . --fix",
 		"build": "tsc",
 		"dev": "tsc --watch",
-		"debug": "node --import tsx source/cli.tsx",
-		"watch": "npx tsx watch --import tsx source/cli.tsx",
-		"test": "jest",
-		"test:unit": "jest source/",
-		"test:watch": "jest --watch",
-		"test:component": "npm run format:check && jest",
-		"format": "prettier --write .",
-		"format:check": "prettier --check .",
-		"lint": "npm run format"
+		"test": "prettier --check . && xo && ava"
 	},
 	"files": [
 		"dist"
 	],
 	"dependencies": {
-		"@enso-labs/agent-core": "^0.0.1-rc6",
-		"@langchain/anthropic": "^0.3.26",
-		"@langchain/core": "^0.3.66",
-		"@langchain/ollama": "^0.2.3",
-		"@langchain/openai": "^0.6.2",
-		"@langchain/tavily": "^0.1.4",
-		"dotenv": "^17.2.0",
-		"ink": "^6.1.0",
+		"fullscreen-ink": "^0.1.0",
+		"ink": "^5.0.1",
+		"ink-big-text": "^2.0.0",
+		"ink-gradient": "^3.0.0",
 		"ink-select-input": "^6.2.0",
-		"ink-text-input": "^6.0.0",
-		"langchain": "^0.3.30",
 		"meow": "^11.0.0",
-		"react": "^19.0.0",
-		"yaml": "^2.8.0",
-		"zod": "3.25.67",
-		"zod-to-json-schema": "^3.24.6"
+		"react": "^18.2.0"
 	},
 	"devDependencies": {
 		"@sindresorhus/tsconfig": "^3.0.1",
-		"@types/ink-testing-library": "^1.0.4",
-		"@types/jest": "^29.5.8",
-		"@types/react": "^19.0.0",
-		"@typescript-eslint/eslint-plugin": "^8.37.0",
-		"@typescript-eslint/parser": "^8.37.0",
+		"@types/react": "^18.0.32",
 		"@vdemedes/prettier-config": "^2.0.1",
+		"ava": "^5.2.0",
 		"chalk": "^5.2.0",
-		"eslint": "^9.31.0",
 		"eslint-config-xo-react": "^0.27.0",
 		"eslint-plugin-react": "^7.32.2",
-		"eslint-plugin-react-hooks": "^5.2.0",
+		"eslint-plugin-react-hooks": "^4.6.0",
 		"ink-testing-library": "^3.0.0",
-		"jest": "^29.7.0",
-		"prettier": "^2.8.7",
-		"ts-jest": "^29.1.1",
+		"prettier": "2.8.8",
 		"ts-node": "^10.9.1",
-		"tsx": "^4.19.2",
-		"typescript": "^5.8.3",
+		"typescript": "^5.0.3",
 		"xo": "^0.53.1"
 	},
-	"overrides": {
-		"zod": "3.25.67"
-	}
+	"ava": {
+		"extensions": {
+			"ts": "module",
+			"tsx": "module"
+		},
+		"nodeArguments": [
+			"--loader=ts-node/esm"
+		]
+	},
+	"xo": {
+		"extends": "xo-react",
+		"prettier": true,
+		"rules": {
+			"react/prop-types": "off"
+		}
+	},
+	"prettier": "@vdemedes/prettier-config"
 }

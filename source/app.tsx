@@ -1,17 +1,96 @@
-import InteractiveApp from './components/InteractiveApp.js';
-import dotenv from 'dotenv';
-import Router from './router.js';
+import React, {useState} from 'react';
+import {Text, useApp} from 'ink';
+import {Box} from 'ink';
+import {PropsWithChildren} from 'react';
+import Gradient from 'ink-gradient';
+import BigText from 'ink-big-text';
+import SelectInput from 'ink-select-input';
+import {Item} from '../node_modules/ink-select-input/build/SelectInput.js';
 
-dotenv.config();
+function MainLayout({children}: PropsWithChildren) {
+	return <Box>{children}</Box>;
+}
 
-type Props = {
-	name: string | undefined;
+type SideBarProps = {
+	navItems: Array<Item<string>>;
+	onSelect: (item: Item<string>) => void;
 };
 
-export default function App({name}: Props) {
+function SideBar({navItems, onSelect}: SideBarProps) {
 	return (
-		<Router>
-			<InteractiveApp name={name} version="0.3.43" />
-		</Router>
+		<Box
+			borderStyle={'single'}
+			height={'100%'}
+			width={40}
+			paddingTop={1}
+			paddingBottom={1}
+			paddingLeft={2}
+			paddingRight={2}
+		>
+			<SelectInput items={navItems} onSelect={onSelect} />
+		</Box>
+	);
+}
+
+function ContentPaneOne() {
+	return (
+		<Box
+			borderStyle={'single'}
+			height={'100%'}
+			width={'100%'}
+			flexDirection={'column'}
+			paddingLeft={4}
+			paddingRight={4}
+		>
+			<Gradient name={'retro'}>
+				<BigText text={'Pane 1'} />
+			</Gradient>
+			<Text>I'm the first content area</Text>
+		</Box>
+	);
+}
+
+function ContentPaneTwo() {
+	return (
+		<Box
+			borderStyle={'single'}
+			height={'100%'}
+			width={'100%'}
+			flexDirection={'column'}
+			paddingLeft={4}
+			paddingRight={4}
+		>
+			<Gradient name={'rainbow'}>
+				<BigText text={'Pane 2'} />
+			</Gradient>
+			<Text>I'm the second content area</Text>
+		</Box>
+	);
+}
+
+const navItems: Item<string>[] = [
+	{label: 'Pane 1', value: 'pane_one'},
+	{label: 'Pane 2', value: 'pane_two'},
+	{label: 'Exit', value: 'exit'},
+];
+
+export default function App() {
+	const [currentNavItem, setCUrrentNavItem] = useState(navItems[0]);
+	const {exit} = useApp();
+
+	const onNavItemSlected = (item: Item<string>) => {
+		if (item.value === 'exit') {
+			exit();
+		} else {
+			setCUrrentNavItem(item);
+		}
+	};
+
+	return (
+		<MainLayout>
+			<SideBar navItems={navItems} onSelect={onNavItemSlected} />
+			{currentNavItem?.value === 'pane_one' && <ContentPaneOne />}
+			{currentNavItem?.value === 'pane_two' && <ContentPaneTwo />}
+		</MainLayout>
 	);
 }
