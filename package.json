@@ -10,9 +10,10 @@
 	"scripts": {
 		"start": "npm run build && node dist/cli.js",
 		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && xo --fix",
+		"format:check": "prettier --check .",
 		"build": "tsc",
 		"dev": "tsc --watch",
-		"test": "prettier --check . && xo && npm run build && ava"
+		"test": "xo && npm run build && ava"
 	},
 	"files": [
 		"dist"
