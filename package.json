@@ -9,10 +9,10 @@
 	},
 	"scripts": {
 		"start": "npm run build && node dist/cli.js",
-		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && eslint . --fix",
+		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && xo --fix",
 		"build": "tsc",
 		"dev": "tsc --watch",
-		"test": "prettier --check . && xo && ava"
+		"test": "prettier --check . && xo && npm run build && ava"
 	},
 	"files": [
 		"dist"
@@ -38,23 +38,25 @@
 		"ink-testing-library": "^3.0.0",
 		"prettier": "2.8.8",
 		"ts-node": "^10.9.1",
+		"tsx": "^4.21.0",
 		"typescript": "^5.0.3",
 		"xo": "^0.53.1"
 	},
 	"ava": {
-		"extensions": {
-			"ts": "module",
-			"tsx": "module"
-		},
-		"nodeArguments": [
-			"--loader=ts-node/esm"
+		"files": [
+			"dist/__tests__/**/*.test.js"
 		]
 	},
 	"xo": {
 		"extends": "xo-react",
 		"prettier": true,
+		"ignores": [
+			"dist/**"
+		],
 		"rules": {
-			"react/prop-types": "off"
+			"react/prop-types": "off",
+			"unicorn/expiring-todo-comments": "off",
+			"ava/no-ignored-test-files": "off"
 		}
 	},
 	"prettier": "@vdemedes/prettier-config"
