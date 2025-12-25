@@ -2,48 +2,43 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Debug CLI (TypeScript)",
+			"name": "Debug CLI",
 			"type": "node",
 			"request": "launch",
 			"program": "${workspaceFolder}/source/cli.tsx",
-			"args": [],
 			"runtimeArgs": ["--loader", "ts-node/esm"],
-			"env": {
-				"NODE_OPTIONS": "--loader ts-node/esm"
-			},
 			"console": "integratedTerminal",
-			"skipFiles": ["<node_internals>/**"],
-			"resolveSourceMapLocations": [
-				"${workspaceFolder}/**",
-				"!**/node_modules/**"
-			]
-		},
-		{
-			"name": "Debug CLI with --name argument",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceFolder}/source/cli.tsx",
-			"args": ["--name", "Developer"],
-			"runtimeArgs": ["--loader", "ts-node/esm"],
-			"env": {
-				"NODE_OPTIONS": "--loader ts-node/esm"
-			},
-			"console": "integratedTerminal",
-			"skipFiles": ["<node_internals>/**"],
-			"resolveSourceMapLocations": [
-				"${workspaceFolder}/**",
-				"!**/node_modules/**"
-			]
+			"skipFiles": ["<node_internals>/**"]
 		},
 		{
 			"name": "Debug Built CLI",
 			"type": "node",
 			"request": "launch",
 			"program": "${workspaceFolder}/dist/cli.js",
-			"args": [],
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"],
 			"preLaunchTask": "npm: build"
+		},
+		{
+			"name": "Debug Single Tests",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceFolder}/node_modules/.bin/jest",
+			"args": ["source/utils/__tests__/agent.test.ts", "--runInBand"],
+			"runtimeArgs": ["--loader", "ts-node/esm"],
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"],
+			"envFile": "${workspaceFolder}/.env"
+		},
+		{
+			"name": "Debug React Init Tests",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceFolder}/node_modules/.bin/jest",
+			"args": ["source/__tests__/react-init.test.tsx", "--runInBand"],
+			"runtimeArgs": ["--loader", "ts-node/esm"],
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"]
 		}
 	]
 }

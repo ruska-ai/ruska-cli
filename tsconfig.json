@@ -1,13 +1,7 @@
 {
 	"extends": "@sindresorhus/tsconfig",
 	"compilerOptions": {
-		"outDir": "dist",
-		"jsx": "react-jsx",
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"moduleResolution": "node16",
-		"skipLibCheck": true,
-		"sourceMap": true
+		"outDir": "dist"
 	},
 	"include": ["source"]
 }

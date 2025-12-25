@@ -1,28 +1,37 @@
 #!/usr/bin/env node
-import {render} from 'ink';
+import React from 'react';
 import meow from 'meow';
+import {withFullScreen} from 'fullscreen-ink';
 import App from './app.js';
 
 const cli = meow(
 	`
 	Usage
-	  $ gilfoyle
+	  $ shell [options]
 
 	Options
-		--name  Your name
+	  --ui  Launch interactive TUI mode
 
 	Examples
-	  $ gilfoyle --name=Jane
-	  Hello, Jane
+	  $ shell          # Run in CLI mode (default)
+	  $ shell --ui     # Launch TUI mode
 `,
 	{
 		importMeta: import.meta,
 		flags: {
-			name: {
-				type: 'string',
+			ui: {
+				type: 'boolean',
+				default: false,
 			},
 		},
 	},
 );
 
-render(<App name={cli.flags.name} />);
+if (cli.flags.ui) {
+	// TUI Mode - launch fullscreen interface
+	await withFullScreen(<App />).start();
+} else {
+	// CLI Mode (default)
+	console.log('Shell CLI - Use --ui to launch interactive TUI');
+	console.log('Run `shell --help` for more options');
+}
