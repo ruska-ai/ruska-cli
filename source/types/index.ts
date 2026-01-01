@@ -96,3 +96,52 @@ export const hostPresets = {
 } as const;
 
 export type HostPreset = keyof typeof hostPresets;
+
+// =============================================================================
+// Streaming / Chat Types
+// =============================================================================
+
+/**
+ * Chat message for streaming conversations
+ */
+export type ChatMessage = {
+	role: 'user' | 'assistant' | 'system' | 'tool';
+	content: string;
+	id?: string;
+};
+
+/**
+ * Streaming request payload for /api/llm/stream
+ */
+export type StreamRequest = {
+	input: {
+		messages: ChatMessage[];
+		files?: Record<string, unknown>;
+	};
+	model?: string;
+	system_prompt?: string;
+	instructions?: string;
+	tools?: string[];
+	a2a?: Record<string, unknown>;
+	mcp?: Record<string, unknown>;
+	subagents?: Array<Record<string, unknown>>;
+	presidio?: {
+		analyze?: boolean;
+		anonymize?: boolean;
+	};
+	metadata?: {
+		[key: string]: unknown;
+		assistant_id?: string;
+		thread_id?: string;
+		user_id?: string;
+	};
+};
+
+/**
+ * Parsed response from SSE stream events
+ */
+export type StreamResponse = {
+	type: 'messages' | 'values' | 'error' | 'unknown';
+	data?: unknown;
+	error?: string;
+};

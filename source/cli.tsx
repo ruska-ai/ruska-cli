@@ -9,6 +9,7 @@ import {runAssistantsCommand} from './commands/assistants.js';
 import {runAssistantCommand} from './commands/assistant.js';
 import {runModelsCommand} from './commands/models.js';
 import {runCreateAssistantCommand} from './commands/create-assistant.js';
+import {runChatCommand} from './commands/chat.js';
 
 const cli = meow(
 	`
@@ -21,9 +22,15 @@ const cli = meow(
 	  assistant <id>    Get assistant by ID
 	  create            Create a new assistant
 	  models            List available models
+	  chat              Chat with an AI assistant
 
 	Options
 	  --ui              Launch interactive TUI mode
+
+	Chat Options
+	  --assistant, -a   Assistant ID to chat with
+	  --message, -m     Message to send (non-interactive mode)
+	  --model           Model override (e.g., openai:gpt-4o)
 
 	Create Options
 	  --name            Assistant name (required)
@@ -40,6 +47,9 @@ const cli = meow(
 	  $ ruska create --name "My Agent" --model openai:gpt-4.1-mini
 	  $ ruska create -i                               # Interactive create mode
 	  $ ruska models                                  # List available models
+	  $ ruska chat                                    # Interactive chat mode
+	  $ ruska chat -a <assistant-id>                  # Chat with specific assistant
+	  $ ruska chat -m "Hello, AI!"                    # Single message mode
 	  $ ruska --ui                                    # Launch TUI mode
 `,
 	{
@@ -68,6 +78,14 @@ const cli = meow(
 			},
 			tools: {
 				type: 'string',
+			},
+			assistant: {
+				type: 'string',
+				shortFlag: 'a',
+			},
+			message: {
+				type: 'string',
+				shortFlag: 'm',
 			},
 		},
 	},
@@ -123,6 +141,21 @@ async function main() {
 				description: cli.flags.description,
 				systemPrompt: cli.flags.systemPrompt,
 				tools: cli.flags.tools,
+			});
+			break;
+		}
+
+		case 'chat': {
+			// Handle both long (--message) and short (-m) flags for meow compatibility
+			const chatFlags = cli.flags as Record<string, unknown>;
+			await runChatCommand({
+				assistantId:
+					(chatFlags['assistant'] as string | undefined) ??
+					(chatFlags['a'] as string | undefined),
+				message:
+					(chatFlags['message'] as string | undefined) ??
+					(chatFlags['m'] as string | undefined),
+				model: cli.flags.model,
 			});
 			break;
 		}

@@ -27,9 +27,15 @@ $ ruska --help
     assistant <id>    Get assistant by ID
     create            Create a new assistant
     models            List available models
+    chat              Chat with an AI assistant
 
   Options
     --ui              Launch interactive TUI mode
+
+  Chat Options
+    --assistant, -a   Assistant ID to chat with
+    --message, -m     Message to send (non-interactive mode)
+    --model           Model override (e.g., openai:gpt-4o)
 
   Create Options
     --name            Assistant name (required)
@@ -46,6 +52,9 @@ $ ruska --help
     $ ruska create --name "My Agent" --model openai:gpt-4.1-mini
     $ ruska create -i                               # Interactive create mode
     $ ruska models                                  # List available models
+    $ ruska chat                                    # Interactive chat mode
+    $ ruska chat -a <assistant-id>                  # Chat with specific assistant
+    $ ruska chat -m "Hello, AI!"                    # Single message mode
     $ ruska --ui                                    # Launch TUI mode
 ```
 
@@ -154,6 +163,45 @@ All Models (15):
  - openai:gpt-4.1-mini
  - anthropic:claude-3-5-sonnet
  ...
+```
+
+### `ruska chat`
+
+Chat with an AI assistant with real-time streaming responses. Supports both interactive and non-interactive modes.
+
+**Interactive mode (default):**
+
+```bash
+$ ruska chat
+
+Checking authentication...
+You: What is the capital of France?
+AI: The capital of France is Paris.
+You: (type next message or press Esc to exit)
+```
+
+**With a specific assistant:**
+
+```bash
+$ ruska chat -a eed8d8b3-3dcd-4396-afba-...
+
+Chatting with: Currency Agent (openai:gpt-4o)
+You: Convert 100 USD to EUR
+AI: 100 USD is approximately 92.50 EUR at the current exchange rate.
+```
+
+**Non-interactive mode (single message):**
+
+```bash
+$ ruska chat -m "What is 2 + 2?"
+
+AI: 2 + 2 equals 4.
+```
+
+**With model override:**
+
+```bash
+$ ruska chat --model openai:gpt-4o -m "Explain quantum computing"
 ```
 
 ### `ruska --ui`
