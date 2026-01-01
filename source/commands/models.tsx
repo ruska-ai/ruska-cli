@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {render, Text, Box, useApp} from 'ink';
 import Spinner from 'ink-spinner';
-import {type ModelsResponse, HOST_PRESETS} from '../types/index.js';
+import {type ModelsResponse, hostPresets} from '../types/index.js';
 import {loadConfig} from '../lib/config.js';
 import {fetchModels} from '../lib/api.js';
 
@@ -10,15 +10,15 @@ type Status = 'loading' | 'success' | 'error';
 function ModelsCommand() {
 	const {exit} = useApp();
 	const [status, setStatus] = useState<Status>('loading');
-	const [models, setModels] = useState<ModelsResponse | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const [models, setModels] = useState<ModelsResponse | undefined>(undefined);
+	const [error, setError] = useState<string | undefined>(undefined);
 	const [host, setHost] = useState<string>('');
 
 	useEffect(() => {
 		const getModels = async () => {
 			// Try to load config for host, fall back to production
 			const config = await loadConfig();
-			const targetHost = config?.host ?? HOST_PRESETS.production;
+			const targetHost = config?.host ?? hostPresets.production;
 			setHost(targetHost);
 
 			// Fetch models (auth is optional)
@@ -32,7 +32,9 @@ function ModelsCommand() {
 				setStatus('error');
 			}
 
-			setTimeout(() => exit(), 100);
+			setTimeout(() => {
+				exit();
+			}, 100);
 		};
 
 		void getModels();
@@ -78,9 +80,9 @@ function ModelsCommand() {
 
 					<Box marginTop={1} flexDirection="column">
 						<Text bold>Free Models:</Text>
-						{models.free.map((model) => (
+						{models.free.map(model => (
 							<Text key={model}>
-								<Text dimColor>  - </Text>
+								<Text dimColor> - </Text>
 								<Text color="yellow">{model}</Text>
 							</Text>
 						))}
@@ -88,9 +90,9 @@ function ModelsCommand() {
 
 					<Box marginTop={1} flexDirection="column">
 						<Text bold>All Models ({models.models.length}):</Text>
-						{models.models.map((model) => (
+						{models.models.map(model => (
 							<Text key={model}>
-								<Text dimColor>  - </Text>
+								<Text dimColor> - </Text>
 								<Text>{model}</Text>
 							</Text>
 						))}

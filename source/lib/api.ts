@@ -22,6 +22,47 @@ export class ApiClient {
 	}
 
 	/**
+	 * Get current user info - used to validate API key
+	 */
+	async getUserInfo(): Promise<ApiResponse<UserInfo>> {
+		return this.request<UserInfo>('/auth/user');
+	}
+
+	/**
+	 * Search/list assistants
+	 */
+	async searchAssistants(): Promise<ApiResponse<AssistantsSearchResponse>> {
+		return this.request<AssistantsSearchResponse>('/assistants/search', {
+			method: 'POST',
+			body: JSON.stringify({filter: {}}),
+		});
+	}
+
+	/**
+	 * Get a single assistant by ID
+	 */
+	async getAssistant(
+		id: string,
+	): Promise<ApiResponse<AssistantsSearchResponse>> {
+		return this.request<AssistantsSearchResponse>('/assistants/search', {
+			method: 'POST',
+			body: JSON.stringify({filter: {id}}),
+		});
+	}
+
+	/**
+	 * Create a new assistant
+	 */
+	async createAssistant(
+		assistant: CreateAssistantRequest,
+	): Promise<ApiResponse<CreateAssistantResponse>> {
+		return this.request<CreateAssistantResponse>('/assistants', {
+			method: 'POST',
+			body: JSON.stringify(assistant),
+		});
+	}
+
+	/**
 	 * Make an authenticated request to the API
 	 */
 	private async request<T>(
@@ -61,52 +102,13 @@ export class ApiClient {
 				success: true,
 				data,
 			};
-		} catch (error) {
+		} catch (error: unknown) {
 			return {
 				success: false,
 				error:
 					error instanceof Error ? error.message : 'Unknown error occurred',
 			};
 		}
-	}
-
-	/**
-	 * Get current user info - used to validate API key
-	 */
-	async getUserInfo(): Promise<ApiResponse<UserInfo>> {
-		return this.request<UserInfo>('/auth/user');
-	}
-
-	/**
-	 * Search/list assistants
-	 */
-	async searchAssistants(): Promise<ApiResponse<AssistantsSearchResponse>> {
-		return this.request<AssistantsSearchResponse>('/assistants/search', {
-			method: 'POST',
-			body: JSON.stringify({filter: {}}),
-		});
-	}
-
-	/**
-	 * Get a single assistant by ID
-	 */
-	async getAssistant(id: string): Promise<ApiResponse<AssistantsSearchResponse>> {
-		return this.request<AssistantsSearchResponse>('/assistants/search', {
-			method: 'POST',
-			body: JSON.stringify({filter: {id}}),
-		});
-	}
-
-	/**
-	 * Create a new assistant
-	 */
-	async createAssistant(
-		assistant: CreateAssistantRequest,
-	): Promise<ApiResponse<CreateAssistantResponse>> {
-		return this.request<CreateAssistantResponse>('/assistants', {
-			method: 'POST',
-			body: JSON.stringify(assistant),
-		});
 	}
 }
 
@@ -169,7 +171,7 @@ export async function fetchModels(
 			success: true,
 			data,
 		};
-	} catch (error) {
+	} catch (error: unknown) {
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : 'Unknown error occurred',

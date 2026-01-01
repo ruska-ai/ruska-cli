@@ -5,7 +5,12 @@ import {type Assistant} from '../types/index.js';
 import {loadConfig} from '../lib/config.js';
 import {createApiClient} from '../lib/api.js';
 
-type Status = 'loading' | 'success' | 'error' | 'not-authenticated' | 'not-found';
+type Status =
+	| 'loading'
+	| 'success'
+	| 'error'
+	| 'not-authenticated'
+	| 'not-found';
 
 type AssistantCommandProps = {
 	readonly assistantId: string;
@@ -14,8 +19,8 @@ type AssistantCommandProps = {
 function AssistantCommand({assistantId}: AssistantCommandProps) {
 	const {exit} = useApp();
 	const [status, setStatus] = useState<Status>('loading');
-	const [assistant, setAssistant] = useState<Assistant | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const [assistant, setAssistant] = useState<Assistant | undefined>(undefined);
+	const [error, setError] = useState<string | undefined>(undefined);
 
 	useEffect(() => {
 		const fetchAssistant = async () => {
@@ -23,7 +28,9 @@ function AssistantCommand({assistantId}: AssistantCommandProps) {
 			const config = await loadConfig();
 			if (!config) {
 				setStatus('not-authenticated');
-				setTimeout(() => exit(), 100);
+				setTimeout(() => {
+					exit();
+				}, 100);
 				return;
 			}
 
@@ -34,7 +41,7 @@ function AssistantCommand({assistantId}: AssistantCommandProps) {
 			if (result.success && result.data) {
 				const {assistants} = result.data;
 				if (assistants.length > 0) {
-					setAssistant(assistants[0]!);
+					setAssistant(assistants[0]);
 					setStatus('success');
 				} else {
 					setStatus('not-found');
@@ -44,7 +51,9 @@ function AssistantCommand({assistantId}: AssistantCommandProps) {
 				setStatus('error');
 			}
 
-			setTimeout(() => exit(), 100);
+			setTimeout(() => {
+				exit();
+			}, 100);
 		};
 
 		void fetchAssistant();
@@ -154,6 +163,8 @@ function AssistantCommand({assistantId}: AssistantCommandProps) {
 }
 
 export async function runAssistantCommand(assistantId: string): Promise<void> {
-	const {waitUntilExit} = render(<AssistantCommand assistantId={assistantId} />);
+	const {waitUntilExit} = render(
+		<AssistantCommand assistantId={assistantId} />,
+	);
 	await waitUntilExit();
 }

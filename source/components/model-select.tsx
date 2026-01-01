@@ -9,7 +9,7 @@ type ModelSelectProps = {
 	readonly onEscape?: () => void;
 };
 
-const MAX_VISIBLE = 8;
+const maxVisible = 8;
 
 export function ModelSelect({
 	models,
@@ -23,7 +23,7 @@ export function ModelSelect({
 
 	// Filter models based on input
 	const filteredModels = value
-		? models.filter((m) => m.toLowerCase().includes(value.toLowerCase()))
+		? models.filter(m => m.toLowerCase().includes(value.toLowerCase()))
 		: models;
 
 	// Reset selection when filter changes
@@ -38,11 +38,11 @@ export function ModelSelect({
 		}
 
 		if (key.downArrow) {
-			setSelectedIndex((prev) =>
-				Math.min(prev + 1, filteredModels.length - 1),
+			setSelectedIndex(previous =>
+				Math.min(previous + 1, filteredModels.length - 1),
 			);
 		} else if (key.upArrow) {
-			setSelectedIndex((prev) => Math.max(prev - 1, 0));
+			setSelectedIndex(previous => Math.max(previous - 1, 0));
 		} else if (key.tab) {
 			// Tab to autocomplete
 			if (filteredModels.length > 0 && filteredModels[selectedIndex]) {
@@ -70,9 +70,15 @@ export function ModelSelect({
 	// Calculate visible window
 	const startIndex = Math.max(
 		0,
-		Math.min(selectedIndex - Math.floor(MAX_VISIBLE / 2), filteredModels.length - MAX_VISIBLE),
+		Math.min(
+			selectedIndex - Math.floor(maxVisible / 2),
+			filteredModels.length - maxVisible,
+		),
 	);
-	const visibleModels = filteredModels.slice(startIndex, startIndex + MAX_VISIBLE);
+	const visibleModels = filteredModels.slice(
+		startIndex,
+		startIndex + maxVisible,
+	);
 
 	return (
 		<Box flexDirection="column">
@@ -84,9 +90,7 @@ export function ModelSelect({
 
 			{filteredModels.length > 0 && (
 				<Box flexDirection="column" marginTop={1} marginLeft={2}>
-					{startIndex > 0 && (
-						<Text dimColor>  ↑ {startIndex} more</Text>
-					)}
+					{startIndex > 0 && <Text dimColor> ↑ {startIndex} more</Text>}
 					{visibleModels.map((model, idx) => {
 						const actualIndex = startIndex + idx;
 						const isSelected = actualIndex === selectedIndex;
@@ -95,18 +99,15 @@ export function ModelSelect({
 								<Text color={isSelected ? 'cyan' : undefined}>
 									{isSelected ? '❯ ' : '  '}
 								</Text>
-								<Text
-									bold={isSelected}
-									color={isSelected ? 'cyan' : undefined}
-								>
+								<Text bold={isSelected} color={isSelected ? 'cyan' : undefined}>
 									{model}
 								</Text>
 							</Box>
 						);
 					})}
-					{startIndex + MAX_VISIBLE < filteredModels.length && (
+					{startIndex + maxVisible < filteredModels.length && (
 						<Text dimColor>
-							  ↓ {filteredModels.length - startIndex - MAX_VISIBLE} more
+							↓ {filteredModels.length - startIndex - maxVisible} more
 						</Text>
 					)}
 				</Box>
@@ -119,9 +120,7 @@ export function ModelSelect({
 			)}
 
 			<Box marginTop={1}>
-				<Text dimColor>
-					↑↓ navigate • Tab autocomplete • Enter select
-				</Text>
+				<Text dimColor>↑↓ navigate • Tab autocomplete • Enter select</Text>
 			</Box>
 		</Box>
 	);

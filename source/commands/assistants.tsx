@@ -11,7 +11,7 @@ function AssistantsCommand() {
 	const {exit} = useApp();
 	const [status, setStatus] = useState<Status>('loading');
 	const [assistants, setAssistants] = useState<Assistant[]>([]);
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState<string | undefined>(undefined);
 
 	useEffect(() => {
 		const fetchAssistants = async () => {
@@ -20,7 +20,9 @@ function AssistantsCommand() {
 			if (!config) {
 				setStatus('not-authenticated');
 				// Auto-exit after render
-				setTimeout(() => exit(), 100);
+				setTimeout(() => {
+					exit();
+				}, 100);
 				return;
 			}
 
@@ -37,7 +39,9 @@ function AssistantsCommand() {
 			}
 
 			// Auto-exit after render
-			setTimeout(() => exit(), 100);
+			setTimeout(() => {
+				exit();
+			}, 100);
 		};
 
 		void fetchAssistants();
@@ -86,7 +90,7 @@ function AssistantsCommand() {
 				<Text dimColor>No assistants found.</Text>
 			) : (
 				<Box flexDirection="column">
-					{assistants.map((assistant) => (
+					{assistants.map(assistant => (
 						<Text key={assistant.id}>
 							<Text color="yellow">{assistant.id}</Text>
 							<Text> </Text>

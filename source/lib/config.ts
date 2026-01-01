@@ -24,7 +24,7 @@ async function ensureConfigDir(): Promise<void> {
 	const configDir = getConfigDir();
 	try {
 		await fs.mkdir(configDir, {recursive: true});
-	} catch (error) {
+	} catch (error: unknown) {
 		// Directory already exists or other error
 		if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
 			throw error;
@@ -34,23 +34,23 @@ async function ensureConfigDir(): Promise<void> {
 
 /**
  * Load config from ~/.ruska/auth.json
- * Returns null if config doesn't exist or is invalid
+ * Returns undefined if config doesn't exist or is invalid
  */
-export async function loadConfig(): Promise<Config | null> {
+export async function loadConfig(): Promise<Config | undefined> {
 	try {
 		const configPath = getConfigPath();
-		const data = await fs.readFile(configPath, 'utf-8');
+		const data = await fs.readFile(configPath, 'utf8');
 		const config = JSON.parse(data) as Config;
 
 		// Validate required fields
 		if (!config.apiKey || !config.host) {
-			return null;
+			return undefined;
 		}
 
 		return config;
 	} catch {
 		// File doesn't exist or is invalid JSON
-		return null;
+		return undefined;
 	}
 }
 
@@ -60,7 +60,7 @@ export async function loadConfig(): Promise<Config | null> {
 export async function saveConfig(config: Config): Promise<void> {
 	await ensureConfigDir();
 	const configPath = getConfigPath();
-	await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+	await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
 }
 
 /**
@@ -80,5 +80,5 @@ export async function clearConfig(): Promise<void> {
  */
 export async function isAuthenticated(): Promise<boolean> {
 	const config = await loadConfig();
-	return config !== null;
+	return config !== undefined;
 }

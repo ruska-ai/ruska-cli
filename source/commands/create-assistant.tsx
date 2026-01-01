@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {render, Text, Box, useApp, useInput} from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import {type CreateAssistantRequest, HOST_PRESETS} from '../types/index.js';
+import {type CreateAssistantRequest, hostPresets} from '../types/index.js';
 import {loadConfig} from '../lib/config.js';
 import {createApiClient, fetchModels} from '../lib/api.js';
 import {ModelSelect} from '../components/model-select.js';
@@ -49,8 +49,8 @@ function InteractiveCreateAssistant({
 	const [model, setModel] = useState(initialModel);
 	const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
 	const [tools, setTools] = useState(initialTools);
-	const [assistantId, setAssistantId] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const [assistantId, setAssistantId] = useState<string | undefined>(undefined);
+	const [error, setError] = useState<string | undefined>(undefined);
 	const [availableModels, setAvailableModels] = useState<string[]>([]);
 
 	useEffect(() => {
@@ -59,13 +59,15 @@ function InteractiveCreateAssistant({
 			if (!config) {
 				setError('Not authenticated. Run `ruska auth` first.');
 				setStep('error');
-				setTimeout(() => exit(), 100);
+				setTimeout(() => {
+					exit();
+				}, 100);
 				return;
 			}
 
 			// Fetch available models
 			const modelsResult = await fetchModels(
-				config.host ?? HOST_PRESETS.production,
+				config.host ?? hostPresets.production,
 				config.apiKey,
 			);
 			if (modelsResult.success && modelsResult.data) {
@@ -80,7 +82,9 @@ function InteractiveCreateAssistant({
 
 	useEffect(() => {
 		if (step === 'done' || step === 'error') {
-			setTimeout(() => exit(), 100);
+			setTimeout(() => {
+				exit();
+			}, 100);
 		}
 	}, [step, exit]);
 
@@ -133,10 +137,11 @@ function InteractiveCreateAssistant({
 			name: name.trim(),
 			description: description.trim() || undefined,
 			model: model.trim() || undefined,
+			// eslint-disable-next-line @typescript-eslint/naming-convention -- API requires snake_case
 			system_prompt: systemPrompt.trim() || undefined,
 			tools: tools
 				.split(',')
-				.map((t) => t.trim())
+				.map(t => t.trim())
 				.filter(Boolean),
 		};
 
@@ -178,9 +183,9 @@ function InteractiveCreateAssistant({
 					<Text>Name: </Text>
 					<TextInput
 						value={name}
+						placeholder="My Assistant"
 						onChange={setName}
 						onSubmit={handleNameSubmit}
-						placeholder="My Assistant"
 					/>
 				</Box>
 				<Box marginTop={1}>
@@ -203,9 +208,9 @@ function InteractiveCreateAssistant({
 					<Text>Description: </Text>
 					<TextInput
 						value={description}
+						placeholder="A helpful assistant (optional)"
 						onChange={setDescription}
 						onSubmit={handleDescriptionSubmit}
-						placeholder="A helpful assistant (optional)"
 					/>
 				</Box>
 			</Box>
@@ -227,7 +232,7 @@ function InteractiveCreateAssistant({
 						models={availableModels}
 						value={model}
 						onChange={setModel}
-						onSubmit={(selectedModel) => {
+						onSubmit={selectedModel => {
 							setModel(selectedModel);
 							handleModelSubmit();
 						}}
@@ -253,9 +258,9 @@ function InteractiveCreateAssistant({
 					<Text>System Prompt: </Text>
 					<TextInput
 						value={systemPrompt}
+						placeholder="You are a helpful assistant. (optional)"
 						onChange={setSystemPrompt}
 						onSubmit={handleSystemPromptSubmit}
-						placeholder="You are a helpful assistant. (optional)"
 					/>
 				</Box>
 			</Box>
@@ -278,9 +283,9 @@ function InteractiveCreateAssistant({
 					<Text>Tools: </Text>
 					<TextInput
 						value={tools}
+						placeholder="web_search, get_weather (comma-separated)"
 						onChange={setTools}
 						onSubmit={handleToolsSubmit}
-						placeholder="web_search, get_weather (comma-separated)"
 					/>
 				</Box>
 			</Box>
@@ -332,8 +337,8 @@ function NonInteractiveCreateAssistant({
 	const [status, setStatus] = useState<'creating' | 'done' | 'error'>(
 		'creating',
 	);
-	const [assistantId, setAssistantId] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const [assistantId, setAssistantId] = useState<string | undefined>(undefined);
+	const [error, setError] = useState<string | undefined>(undefined);
 
 	useEffect(() => {
 		const create = async () => {
@@ -341,24 +346,29 @@ function NonInteractiveCreateAssistant({
 			if (!config) {
 				setError('Not authenticated. Run `ruska auth` first.');
 				setStatus('error');
-				setTimeout(() => exit(), 100);
+				setTimeout(() => {
+					exit();
+				}, 100);
 				return;
 			}
 
 			const client = createApiClient(config);
 
+			/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Empty strings should coalesce to undefined */
 			const assistant: CreateAssistantRequest = {
 				name,
 				description: description || undefined,
 				model: model || undefined,
+				// eslint-disable-next-line @typescript-eslint/naming-convention -- API requires snake_case
 				system_prompt: systemPrompt || undefined,
 				tools: tools
 					? tools
 							.split(',')
-							.map((t) => t.trim())
+							.map(t => t.trim())
 							.filter(Boolean)
 					: [],
 			};
+			/* eslint-enable @typescript-eslint/prefer-nullish-coalescing */
 
 			const result = await client.createAssistant(assistant);
 
@@ -370,7 +380,9 @@ function NonInteractiveCreateAssistant({
 				setStatus('error');
 			}
 
-			setTimeout(() => exit(), 100);
+			setTimeout(() => {
+				exit();
+			}, 100);
 		};
 
 		void create();
@@ -429,10 +441,9 @@ export async function runCreateAssistantCommand(
 	} else {
 		// Non-interactive mode requires --name
 		if (!options.name) {
-			console.error('Error: --name is required');
-			console.log('Usage: ruska create --name "My Agent" [--model ...] [--tools ...]');
-			console.log('Or use interactive mode: ruska create -i');
-			process.exit(1);
+			throw new Error(
+				'--name is required.\nUsage: ruska create --name "My Agent" [--model ...] [--tools ...]\nOr use interactive mode: ruska create -i',
+			);
 		}
 
 		const {waitUntilExit} = render(

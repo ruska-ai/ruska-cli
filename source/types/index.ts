@@ -23,7 +23,7 @@ export type UserInfo = {
 		id: string;
 		username: string;
 		email: string;
-		name: string | null;
+		name: string | undefined;
 	};
 	env: Record<string, boolean>;
 };
@@ -90,9 +90,9 @@ export type ModelsResponse = {
 /**
  * Host presets for environment selection
  */
-export const HOST_PRESETS = {
+export const hostPresets = {
 	production: 'https://chat.ruska.ai',
 	development: 'http://localhost:8000',
 } as const;
 
-export type HostPreset = keyof typeof HOST_PRESETS;
+export type HostPreset = keyof typeof hostPresets;

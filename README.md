@@ -43,6 +43,7 @@ $ ruska auth
 ```
 
 This will prompt you to:
+
 1. Select your Orchestra host (Production, Development, or Custom URL)
 2. Enter your API key (get this from Settings in the Orchestra web app)
 
@@ -53,6 +54,7 @@ Your credentials are stored in `~/.ruska/auth.json`.
 ### `ruska auth`
 
 Configure API authentication. Interactive command that prompts for:
+
 - Host selection (production/development/custom)
 - API key input (masked for security)
 
@@ -98,7 +100,7 @@ Config is stored at `~/.ruska/auth.json`:
 
 ```json
 {
-  "apiKey": "enso_...",
-  "host": "https://chat.ruska.ai"
+	"apiKey": "enso_...",
+	"host": "https://chat.ruska.ai"
 }
 ```

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import process from 'node:process';
 import React from 'react';
 import meow from 'meow';
 import {withFullScreen} from 'fullscreen-ink';

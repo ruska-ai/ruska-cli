@@ -1,9 +1,10 @@
+import process from 'node:process';
 import React, {useState, useEffect} from 'react';
 import {render, Text, Box, useApp, useInput} from 'ink';
 import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
 import Spinner from 'ink-spinner';
-import {HOST_PRESETS, type HostPreset} from '../types/index.js';
+import {hostPresets, type HostPreset} from '../types/index.js';
 import {saveConfig, loadConfig, clearConfig} from '../lib/config.js';
 import {validateApiKey} from '../lib/api.js';
 
@@ -22,8 +23,8 @@ type HostItem = {
 };
 
 const hostItems: HostItem[] = [
-	{label: `Production (${HOST_PRESETS.production})`, value: 'production'},
-	{label: `Development (${HOST_PRESETS.development})`, value: 'development'},
+	{label: `Production (${hostPresets.production})`, value: 'production'},
+	{label: `Development (${hostPresets.development})`, value: 'development'},
 	{label: 'Custom URL...', value: 'custom'},
 ];
 
@@ -33,9 +34,9 @@ function AuthCommand() {
 	const [host, setHost] = useState('');
 	const [customHost, setCustomHost] = useState('');
 	const [apiKey, setApiKey] = useState('');
-	const [error, setError] = useState<string | null>(null);
-	const [userName, setUserName] = useState<string | null>(null);
-	const isTTY = Boolean(process.stdin.isTTY);
+	const [error, setError] = useState<string | undefined>(undefined);
+	const [userName, setUserName] = useState<string | undefined>(undefined);
+	const hasTty = Boolean(process.stdin.isTTY);
 
 	// Check existing config on mount
 	useEffect(() => {
@@ -52,26 +53,28 @@ function AuthCommand() {
 				} else {
 					// Existing config is invalid, start fresh
 					await clearConfig();
-					if (!isTTY) {
-						setStep('no-tty');
-					} else {
+					if (hasTty) {
 						setStep('host');
+					} else {
+						setStep('no-tty');
 					}
 				}
-			} else if (!isTTY) {
-				setStep('no-tty');
-			} else {
+			} else if (hasTty) {
 				setStep('host');
+			} else {
+				setStep('no-tty');
 			}
 		};
 
 		void checkExisting();
-	}, [isTTY]);
+	}, [hasTty]);
 
 	// Auto-exit for terminal states (done, no-tty)
 	useEffect(() => {
 		if (step === 'done' || step === 'no-tty') {
-			setTimeout(() => exit(), 100);
+			setTimeout(() => {
+				exit();
+			}, 100);
 		}
 	}, [step, exit]);
 
@@ -82,14 +85,14 @@ function AuthCommand() {
 				exit();
 			}
 		},
-		{isActive: isTTY && step !== 'done' && step !== 'no-tty'},
+		{isActive: hasTty && step !== 'done' && step !== 'no-tty'},
 	);
 
 	const handleHostSelect = (item: HostItem) => {
 		if (item.value === 'custom') {
 			setStep('custom-host');
 		} else {
-			setHost(HOST_PRESETS[item.value]);
+			setHost(hostPresets[item.value]);
 			setStep('apikey');
 		}
 	};
@@ -106,7 +109,7 @@ function AuthCommand() {
 			return;
 		}
 
-		setError(null);
+		setError(undefined);
 		setStep('validating');
 
 		const result = await validateApiKey(host, apiKey.trim());
@@ -164,9 +167,9 @@ function AuthCommand() {
 					<Text>Enter custom host URL: </Text>
 					<TextInput
 						value={customHost}
+						placeholder="https://your-orchestra-host.com"
 						onChange={setCustomHost}
 						onSubmit={handleCustomHostSubmit}
-						placeholder="https://your-orchestra-host.com"
 					/>
 				</Box>
 			</Box>
@@ -194,10 +197,10 @@ function AuthCommand() {
 					<Text>Enter your API key: </Text>
 					<TextInput
 						value={apiKey}
-						onChange={setApiKey}
-						onSubmit={handleApiKeySubmit}
 						placeholder="enso_..."
 						mask="*"
+						onChange={setApiKey}
+						onSubmit={handleApiKeySubmit}
 					/>
 				</Box>
 				<Box marginTop={1}>
