@@ -1,0 +1,306 @@
+/**
+ * Chat command for streaming LLM responses
+ * Implements Golden Path: Beta architecture + Gamma output + Alpha timeout
+ */
+
+import process from 'node:process';
+import React, {useState, useEffect, useMemo} from 'react';
+import {render, Text, Box, useApp} from 'ink';
+import Spinner from 'ink-spinner';
+import type {Config, StreamRequest, ValuesPayload} from '../types/index.js';
+import {loadConfig} from '../lib/config.js';
+import {useStream, type StreamStatus} from '../hooks/use-stream.js';
+import {OutputFormatter} from '../lib/output/formatter.js';
+import {classifyError, exitCodes} from '../lib/output/error-handler.js';
+import {writeJson, checkIsTty} from '../lib/output/writers.js';
+import {
+	StreamService,
+	StreamConnectionError,
+} from '../lib/services/stream-service.js';
+
+type ChatCommandProps = {
+	readonly message: string;
+	readonly isJsonMode: boolean;
+	readonly assistantId?: string;
+	readonly threadId?: string;
+};
+
+/**
+ * Status indicator component for TUI mode
+ */
+function StatusIndicator({status}: {readonly status: StreamStatus}) {
+	switch (status) {
+		case 'connecting': {
+			return (
+				<Box>
+					<Text color="cyan">
+						<Spinner type="dots" />
+					</Text>
+					<Text> Connecting...</Text>
+				</Box>
+			);
+		}
+
+		case 'streaming': {
+			return (
+				<Box>
+					<Text color="green">
+						<Spinner type="dots" />
+					</Text>
+					<Text> Streaming...</Text>
+				</Box>
+			);
+		}
+
+		default: {
+			return null;
+		}
+	}
+}
+
+/**
+ * TUI mode chat command using React hook
+ */
+function ChatCommandTui({
+	message,
+	assistantId,
+	threadId,
+}: Omit<ChatCommandProps, 'isJsonMode'>) {
+	const {exit} = useApp();
+	const [config, setConfig] = useState<Config | undefined>();
+	const [authError, setAuthError] = useState(false);
+
+	// Load config on mount
+	useEffect(() => {
+		void loadConfig().then(cfg => {
+			if (cfg) {
+				setConfig(cfg);
+			} else {
+				setAuthError(true);
+				setTimeout(() => {
+					exit();
+				}, 100);
+			}
+		});
+	}, [exit]);
+
+	// Build request (snake_case properties match backend API)
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const request = useMemo<StreamRequest | undefined>(
+		() =>
+			config
+				? {
+						input: {messages: [{role: 'user' as const, content: message}]},
+						metadata: {
+							...(assistantId && {assistant_id: assistantId}),
+							...(threadId && {thread_id: threadId}),
+						},
+				  }
+				: undefined,
+		[config, assistantId, message, threadId],
+	);
+	/* eslint-enable @typescript-eslint/naming-convention */
+
+	// Stream
+	const {status, content, error} = useStream(config, request);
+
+	// Exit on completion
+	useEffect(() => {
+		if (status === 'done' || status === 'error') {
+			setTimeout(() => {
+				exit();
+			}, 100);
+		}
+	}, [status, exit]);
+
+	// Auth error
+	if (authError) {
+		return (
+			<Box flexDirection="column">
+				<Text color="yellow">Not authenticated.</Text>
+				<Text>
+					Run <Text bold>ruska auth</Text> to configure.
+				</Text>
+			</Box>
+		);
+	}
+
+	// Stream error
+	if (status === 'error') {
+		return (
+			<Box flexDirection="column">
+				<Text color="red">Error: {error}</Text>
+			</Box>
+		);
+	}
+
+	// Render TUI
+	return (
+		<Box flexDirection="column">
+			<StatusIndicator status={status} />
+
+			{/* Content */}
+			{content && (
+				<Box marginTop={1}>
+					<Text>{content}</Text>
+				</Box>
+			)}
+
+			{/* Done indicator */}
+			{status === 'done' && (
+				<Box marginTop={1}>
+					<Text color="green">Done</Text>
+				</Box>
+			)}
+		</Box>
+	);
+}
+
+/**
+ * JSON mode chat command - direct streaming without React hooks
+ * Outputs NDJSON for downstream consumption
+ */
+async function runJsonMode(
+	message: string,
+	assistantId?: string,
+	threadId?: string,
+): Promise<void> {
+	const config = await loadConfig();
+
+	if (!config) {
+		const formatter = new OutputFormatter();
+		writeJson(
+			formatter.error(
+				'AUTH_FAILED',
+				'Not authenticated. Run `ruska auth` to configure.',
+			),
+		);
+		process.exitCode = exitCodes.authFailed;
+		return;
+	}
+
+	const service = new StreamService(config);
+	const formatter = new OutputFormatter();
+	let finalResponse: ValuesPayload | undefined;
+
+	try {
+		// Snake_case properties match backend API
+		/* eslint-disable @typescript-eslint/naming-convention */
+		const request: StreamRequest = {
+			input: {messages: [{role: 'user', content: message}]},
+			metadata: {
+				...(assistantId && {assistant_id: assistantId}),
+				...(threadId && {thread_id: threadId}),
+			},
+		};
+		/* eslint-enable @typescript-eslint/naming-convention */
+
+		const handle = await service.connect(request);
+
+		for await (const event of handle.events) {
+			switch (event.type) {
+				case 'messages': {
+					// Output content chunks as NDJSON
+					if (
+						event.payload.content &&
+						typeof event.payload.content === 'string'
+					) {
+						writeJson(formatter.chunk(event.payload.content));
+					}
+
+					// NOTE: Ignoring tool_calls per requirements
+					break;
+				}
+
+				case 'values': {
+					// CRITICAL: Capture complete response
+					finalResponse = event.payload;
+					break;
+				}
+
+				case 'error': {
+					writeJson(formatter.error('SERVER_ERROR', event.payload.message));
+					process.exitCode = exitCodes.serverError;
+					return;
+				}
+
+				default: {
+					// Unknown event type - ignore
+					break;
+				}
+			}
+		}
+
+		// Output final done event with complete response
+		if (finalResponse) {
+			writeJson(formatter.done(finalResponse));
+		} else {
+			// No values event received - output minimal done event
+			writeJson(formatter.done({messages: []}));
+		}
+
+		process.exitCode = exitCodes.success;
+	} catch (error: unknown) {
+		const statusCode =
+			error instanceof StreamConnectionError ? error.statusCode : undefined;
+		const classified = classifyError(error, statusCode);
+		writeJson(formatter.error(classified.code, classified.message));
+		process.exitCode = classified.exitCode;
+	}
+}
+
+/**
+ * Main chat command component - handles JSON mode branching
+ */
+function ChatCommand({
+	message,
+	isJsonMode,
+	assistantId,
+	threadId,
+}: ChatCommandProps) {
+	const {exit} = useApp();
+
+	useEffect(() => {
+		if (isJsonMode) {
+			// JSON mode runs outside React, just exit immediately
+			void runJsonMode(message, assistantId, threadId).finally(() => {
+				exit();
+			});
+		}
+	}, [message, isJsonMode, assistantId, threadId, exit]);
+
+	// JSON mode: no UI (handled in useEffect)
+	if (isJsonMode) {
+		return null;
+	}
+
+	// TUI mode
+	return (
+		<ChatCommandTui
+			message={message}
+			assistantId={assistantId}
+			threadId={threadId}
+		/>
+	);
+}
+
+/**
+ * Run the chat command
+ */
+export async function runChatCommand(
+	message: string,
+	options: {json?: boolean; assistantId?: string; threadId?: string} = {},
+): Promise<void> {
+	// Auto-detect: use JSON mode if not TTY (piped) or explicitly requested
+	const isJsonMode = options.json ?? !checkIsTty();
+
+	const {waitUntilExit} = render(
+		<ChatCommand
+			message={message}
+			isJsonMode={isJsonMode}
+			assistantId={options.assistantId}
+			threadId={options.threadId}
+		/>,
+	);
+	await waitUntilExit();
+}

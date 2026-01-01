@@ -25,11 +25,18 @@ $ ruska --help
     auth              Configure API authentication
     assistants        List your assistants
     assistant <id>    Get assistant by ID
+    chat <message>    Chat with an assistant or continue a thread
     create            Create a new assistant
     models            List available models
 
   Options
     --ui              Launch interactive TUI mode
+
+  Chat Options
+    -a, --assistant   Assistant ID for new conversations
+    -t, --thread      Thread ID to continue a conversation
+    -m, --message     Message (alternative to positional arg)
+    --json            Output as newline-delimited JSON (auto-enabled when piped)
 
   Create Options
     --name            Assistant name (required)
@@ -43,6 +50,10 @@ $ ruska --help
     $ ruska auth                                    # Configure API key and host
     $ ruska assistants                              # List your assistants
     $ ruska assistant eed8d8b3-3dcd-4396-afba-...   # Get assistant details
+    $ ruska chat "Hello" -a <assistant-id>         # New conversation with assistant
+    $ ruska chat "Follow up" -t <thread-id>        # Continue existing thread
+    $ ruska chat "Hello" -a <id> --json            # Output as NDJSON
+    $ ruska chat "Query" -a <id> | jq '.type'      # Pipe to jq
     $ ruska create --name "My Agent" --model openai:gpt-4.1-mini
     $ ruska create -i                               # Interactive create mode
     $ ruska models                                  # List available models
@@ -104,6 +115,57 @@ Description: Converts currencies using real-time rates
 Model: openai:gpt-4o
 Tools: get_exchange_rate, convert_currency
 ```
+
+### `ruska chat <message>`
+
+Chat with an assistant or continue a thread using streaming. Requires authentication.
+
+**Start a new conversation with an assistant:**
+
+```bash
+$ ruska chat "Hello, how are you?" -a e5120812-3bcc-4b1e-93fb-3c1264291dfe
+```
+
+**Continue an existing thread:**
+
+```bash
+$ ruska chat "Follow up question" -t <thread-id>
+```
+
+**JSON output mode (for scripting):**
+
+```bash
+$ ruska chat "Hello" -a <assistant-id> --json
+{"type":"chunk","content":"Hello"}
+{"type":"chunk","content":"!"}
+{"type":"done","response":{"messages":[...]}}
+```
+
+JSON mode is auto-enabled when output is piped:
+
+```bash
+$ ruska chat "Hello" -a <assistant-id> | jq '.type'
+```
+
+**Options:**
+
+| Option            | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| `-a, --assistant` | Assistant ID for new conversations              |
+| `-t, --thread`    | Thread ID to continue an existing conversation  |
+| `-m, --message`   | Message to send (alternative to positional arg) |
+| `--json`          | Output as newline-delimited JSON (NDJSON)       |
+
+**Exit codes:**
+
+| Code | Meaning               |
+| ---- | --------------------- |
+| 0    | Success               |
+| 1    | Network error         |
+| 2    | Authentication failed |
+| 3    | Rate limited          |
+| 4    | Timeout               |
+| 5    | Server error          |
 
 ### `ruska create`
 
@@ -172,6 +234,12 @@ npm run build
 # Watch mode
 npm run dev
 
+# Run tests (linting + build + ava)
+npm run test
+
+# Format code
+npm run format
+
 # Run directly
 node dist/cli.js --help
 ```
@@ -185,4 +253,30 @@ Config is stored at `~/.ruska/auth.json`:
 	"apiKey": "enso_...",
 	"host": "https://chat.ruska.ai"
 }
+```
+
+## Examples
+
+**Chat with Python Agent**
+
+_Request:_
+
+```bash
+ruska chat "Provide first 20 of fib using python_sandbox" \
+  -a e5120812-3bcc-4b1e-93fb-3c1264291dfe \
+  --json \
+| jq -r '.response.messages[-1].content'
+```
+
+_Response:_
+
+```log
+> Ledger Snapshot:
+> Goal: Provide first 20 Fibonacci numbers using Python.
+> Now: Completed Fibonacci sequence calculation.
+> Next: None.
+> Open Questions: None.
+
+The first 20 Fibonacci numbers are:
+0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181.
 ```
