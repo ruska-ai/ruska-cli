@@ -22,16 +22,31 @@ $ ruska --help
     $ ruska <command> [options]
 
   Commands
-    auth         Configure API authentication
-    assistants   List your assistants
+    auth              Configure API authentication
+    assistants        List your assistants
+    assistant <id>    Get assistant by ID
+    create            Create a new assistant
+    models            List available models
 
   Options
-    --ui         Launch interactive TUI mode
+    --ui              Launch interactive TUI mode
+
+  Create Options
+    --name            Assistant name (required)
+    --model           Model to use (default: openai:gpt-4.1-mini)
+    --description     Assistant description
+    --system-prompt   System prompt for the assistant
+    --tools           Comma-separated list of tools
+    -i, --interactive Interactive mode for create command
 
   Examples
-    $ ruska auth          # Configure API key and host
-    $ ruska assistants    # List your assistants
-    $ ruska --ui          # Launch TUI mode
+    $ ruska auth                                    # Configure API key and host
+    $ ruska assistants                              # List your assistants
+    $ ruska assistant eed8d8b3-3dcd-4396-afba-...   # Get assistant details
+    $ ruska create --name "My Agent" --model openai:gpt-4.1-mini
+    $ ruska create -i                               # Interactive create mode
+    $ ruska models                                  # List available models
+    $ ruska --ui                                    # Launch TUI mode
 ```
 
 ## Authentication
@@ -68,10 +83,77 @@ List all your assistants. Requires authentication.
 $ ruska assistants
 
 Your Assistants
- 1. Currency Agent (gpt-4o)
- 2. Research Assistant (claude-3-5-sonnet)
+eed8d8b3-3dcd-4396-afba-... Currency Agent (openai:gpt-4o)
+a1b2c3d4-5678-90ab-cdef-... Research Assistant (anthropic:claude-3-5-sonnet)
 
 Found 2 assistants
+```
+
+### `ruska assistant <id>`
+
+Get details for a specific assistant by ID. Requires authentication.
+
+```bash
+$ ruska assistant eed8d8b3-3dcd-4396-afba-...
+
+Assistant Details
+Last Update: 2024-01-15T10:30:00Z
+ID: eed8d8b3-3dcd-4396-afba-...
+Name: Currency Agent
+Description: Converts currencies using real-time rates
+Model: openai:gpt-4o
+Tools: get_exchange_rate, convert_currency
+```
+
+### `ruska create`
+
+Create a new assistant. Can be used in non-interactive mode with flags or interactive mode with `-i`.
+
+**Non-interactive mode (default):**
+
+```bash
+$ ruska create --name "My Agent" --model openai:gpt-4o --tools "web_search,calculator"
+
+Assistant created successfully!
+ID: abc12345-...
+Name: My Agent
+Model: openai:gpt-4o
+```
+
+**Interactive mode:**
+
+```bash
+$ ruska create -i
+
+Create Assistant
+Name: My Agent
+Description: A helpful assistant
+Model: openai:gpt-4o  # Use arrow keys to navigate, type to filter
+System Prompt: You are a helpful assistant.
+Tools: web_search, calculator
+
+Assistant created successfully!
+```
+
+### `ruska models`
+
+List available models. Does not require authentication but will use your API key if configured.
+
+```bash
+$ ruska models
+
+Available Models (https://chat.ruska.ai)
+Default: openai:gpt-4.1-mini
+
+Free Models:
+ - openai:gpt-4.1-mini
+ - anthropic:claude-3-haiku
+
+All Models (15):
+ - openai:gpt-4o
+ - openai:gpt-4.1-mini
+ - anthropic:claude-3-5-sonnet
+ ...
 ```
 
 ### `ruska --ui`
