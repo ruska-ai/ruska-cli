@@ -149,12 +149,12 @@ $ ruska chat "Hello" -a <assistant-id> | jq '.type'
 
 **Options:**
 
-| Option            | Description                                      |
-| ----------------- | ------------------------------------------------ |
-| `-a, --assistant` | Assistant ID for new conversations               |
-| `-t, --thread`    | Thread ID to continue an existing conversation   |
-| `-m, --message`   | Message to send (alternative to positional arg)  |
-| `--json`          | Output as newline-delimited JSON (NDJSON)        |
+| Option            | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| `-a, --assistant` | Assistant ID for new conversations              |
+| `-t, --thread`    | Thread ID to continue an existing conversation  |
+| `-m, --message`   | Message to send (alternative to positional arg) |
+| `--json`          | Output as newline-delimited JSON (NDJSON)       |
 
 **Exit codes:**
 
