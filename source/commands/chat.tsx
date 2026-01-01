@@ -19,9 +19,9 @@ import {
 } from '../lib/services/stream-service.js';
 
 type ChatCommandProps = {
-	readonly assistantId: string;
 	readonly message: string;
 	readonly isJsonMode: boolean;
+	readonly assistantId?: string;
 	readonly threadId?: string;
 };
 
@@ -62,8 +62,8 @@ function StatusIndicator({status}: {readonly status: StreamStatus}) {
  * TUI mode chat command using React hook
  */
 function ChatCommandTui({
-	assistantId,
 	message,
+	assistantId,
 	threadId,
 }: Omit<ChatCommandProps, 'isJsonMode'>) {
 	const {exit} = useApp();
@@ -92,7 +92,7 @@ function ChatCommandTui({
 				? {
 						input: {messages: [{role: 'user' as const, content: message}]},
 						metadata: {
-							assistant_id: assistantId,
+							...(assistantId && {assistant_id: assistantId}),
 							...(threadId && {thread_id: threadId}),
 						},
 				  }
@@ -161,8 +161,8 @@ function ChatCommandTui({
  * Outputs NDJSON for downstream consumption
  */
 async function runJsonMode(
-	assistantId: string,
 	message: string,
+	assistantId?: string,
 	threadId?: string,
 ): Promise<void> {
 	const config = await loadConfig();
@@ -189,7 +189,7 @@ async function runJsonMode(
 		const request: StreamRequest = {
 			input: {messages: [{role: 'user', content: message}]},
 			metadata: {
-				assistant_id: assistantId,
+				...(assistantId && {assistant_id: assistantId}),
 				...(threadId && {thread_id: threadId}),
 			},
 		};
@@ -253,9 +253,9 @@ async function runJsonMode(
  * Main chat command component - handles JSON mode branching
  */
 function ChatCommand({
-	assistantId,
 	message,
 	isJsonMode,
+	assistantId,
 	threadId,
 }: ChatCommandProps) {
 	const {exit} = useApp();
@@ -263,11 +263,11 @@ function ChatCommand({
 	useEffect(() => {
 		if (isJsonMode) {
 			// JSON mode runs outside React, just exit immediately
-			void runJsonMode(assistantId, message, threadId).finally(() => {
+			void runJsonMode(message, assistantId, threadId).finally(() => {
 				exit();
 			});
 		}
-	}, [assistantId, message, isJsonMode, threadId, exit]);
+	}, [message, isJsonMode, assistantId, threadId, exit]);
 
 	// JSON mode: no UI (handled in useEffect)
 	if (isJsonMode) {
@@ -277,8 +277,8 @@ function ChatCommand({
 	// TUI mode
 	return (
 		<ChatCommandTui
-			assistantId={assistantId}
 			message={message}
+			assistantId={assistantId}
 			threadId={threadId}
 		/>
 	);
@@ -288,18 +288,17 @@ function ChatCommand({
  * Run the chat command
  */
 export async function runChatCommand(
-	assistantId: string,
 	message: string,
-	options: {json?: boolean; threadId?: string} = {},
+	options: {json?: boolean; assistantId?: string; threadId?: string} = {},
 ): Promise<void> {
 	// Auto-detect: use JSON mode if not TTY (piped) or explicitly requested
 	const isJsonMode = options.json ?? !checkIsTty();
 
 	const {waitUntilExit} = render(
 		<ChatCommand
-			assistantId={assistantId}
 			message={message}
 			isJsonMode={isJsonMode}
+			assistantId={options.assistantId}
 			threadId={options.threadId}
 		/>,
 	);
