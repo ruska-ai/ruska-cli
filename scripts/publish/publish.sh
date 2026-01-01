@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PACKAGE_NAME="@ruska/ruska-cli"
 REQUIRED_NODE_VERSION="18"
-REQUIRED_BRANCH="main"
+REQUIRED_BRANCH="master"
 
 # Colors for output
 RED='\033[0;31m'
