@@ -1,27 +1,67 @@
 {
-	"name": "ruska",
-	"version": "0.0.1",
+	"name": "@ruska/ruska-cli",
+	"version": "0.1.1",
 	"description": "CLI for Orchestra - AI Agent Orchestration Platform",
 	"license": "MIT",
+	"author": "RUSKA <contact@ruska.ai>",
+	"homepage": "https://github.com/enso-labs/orchestra/tree/main/cli#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/enso-labs/orchestra.git",
+		"directory": "cli"
+	},
+	"bugs": {
+		"url": "https://github.com/enso-labs/orchestra/issues"
+	},
+	"keywords": [
+		"cli",
+		"ai",
+		"agent",
+		"orchestra",
+		"ruska",
+		"llm",
+		"chatbot",
+		"assistant"
+	],
 	"bin": {
 		"ruska": "dist/cli.js"
 	},
 	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/cli.d.ts",
+			"import": "./dist/cli.js"
+		}
+	},
+	"main": "./dist/cli.js",
+	"types": "./dist/cli.d.ts",
 	"engines": {
 		"node": ">=18"
 	},
+	"files": [
+		"dist",
+		"!dist/__tests__"
+	],
 	"scripts": {
 		"start": "npm run build && node dist/cli.js",
+		"dev": "tsc --watch",
+		"build": "tsc",
+		"build:clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run build",
 		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && xo --fix",
 		"format:check": "prettier --check .",
-		"build": "tsc",
-		"dev": "tsc --watch",
-		"test": "xo && npm run build && ava",
-		"pacakge": "npm i && npm run build && npm link"
+		"lint": "xo",
+		"test": "npm run lint && npm run build && ava",
+		"test:unit": "npm run build && ava",
+		"prepack": "npm run build:clean",
+		"prepublishOnly": "npm run test && npm run build:clean",
+		"version": "npm run format && git add -A",
+		"link": "npm install && npm run build && npm link",
+		"package:local": "npm run build:clean && npm pack"
 	},
-	"files": [
-		"dist"
-	],
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org"
+	},
 	"dependencies": {
 		"fullscreen-ink": "^0.1.0",
 		"ink": "^5.0.1",

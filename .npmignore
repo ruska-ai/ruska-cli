@@ -1,0 +1,41 @@
+# Source files (TypeScript sources not needed in published package)
+source/
+
+# Test files in dist
+dist/__tests__/
+**/*.test.js
+**/*.test.d.ts
+**/*.spec.js
+**/*.spec.d.ts
+
+# Development configuration
+.editorconfig
+.eslintignore
+.eslintrc
+.prettierignore
+.prettierrc
+tsconfig.json
+
+# CI/CD and editor configs
+.github/
+.vscode/
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Development files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Lock files (npm auto-excludes but being explicit)
+package-lock.json
+
+# Development and review docs
+PROPOSAL*.md
+REVIEW.md
+CHANGELOG.md
+CONTRIBUTING.md

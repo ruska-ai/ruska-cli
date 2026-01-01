@@ -244,6 +244,77 @@ npm run format
 node dist/cli.js --help
 ```
 
+## Deployment
+
+Publishing `@ruska/ruska-cli` to NPM.
+
+### Automated (CI/CD)
+
+Push a version tag to trigger the GitHub Actions workflow:
+
+```bash
+# 1. Bump version in package.json
+./scripts/publish/version-bump.sh patch  # or minor, major, 1.2.3
+
+# 2. Commit the version change
+git add package.json
+git commit -m "chore(cli): bump version to X.Y.Z"
+
+# 3. Create and push tag (triggers CI publish)
+git tag cli-vX.Y.Z
+git push origin cli-vX.Y.Z
+```
+
+### Manual Publishing
+
+Use the manual scripts when CI/CD fails or for testing:
+
+```bash
+# 1. Pre-flight safety checks (optional but recommended)
+./scripts/publish/pre-publish-check.sh
+
+# 2. Bump version
+./scripts/publish/version-bump.sh patch
+
+# 3. Verify build output
+./scripts/publish/verify-build.sh
+
+# 4. Publish to NPM (includes all checks)
+./scripts/publish/publish.sh
+
+# Or dry-run first:
+./scripts/publish/publish.sh --dry-run
+```
+
+### Script Reference
+
+| Script                 | Purpose                                      |
+| ---------------------- | -------------------------------------------- |
+| `version-bump.sh`      | Bump version (major/minor/patch or explicit) |
+| `pre-publish-check.sh` | Safety checks (secrets, TODOs, semver)       |
+| `verify-build.sh`      | Verify dist output is correct                |
+| `publish.sh`           | Full publish with all validations            |
+| `rollback.sh`          | Emergency: deprecate a bad version           |
+
+### Rollback
+
+If a published version has critical issues:
+
+```bash
+# Deprecate the problematic version
+./scripts/publish/rollback.sh 1.2.3
+
+# Or deprecate and recommend a specific version
+./scripts/publish/rollback.sh 1.2.3 1.2.2
+```
+
+### Requirements
+
+- Node.js 18+
+- NPM authentication (`npm login`)
+- 2FA enabled for npm writes (recommended)
+- `NPM_TOKEN` secret configured for CI
+
 ## Configuration
 
 Config is stored at `~/.ruska/auth.json`:
