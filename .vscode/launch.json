@@ -2,43 +2,111 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Debug CLI",
+			"name": "Debug CLI (with prompt)",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceFolder}/source/cli.tsx",
-			"runtimeArgs": ["--loader", "ts-node/esm"],
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "${input:cliArgs}"],
+			"cwd": "${workspaceFolder}",
 			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
 			"skipFiles": ["<node_internals>/**"]
 		},
 		{
-			"name": "Debug Built CLI",
+			"name": "Debug: auth",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceFolder}/dist/cli.js",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "auth"],
+			"cwd": "${workspaceFolder}",
 			"console": "integratedTerminal",
-			"skipFiles": ["<node_internals>/**"],
-			"preLaunchTask": "npm: build"
-		},
-		{
-			"name": "Debug Single Tests",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceFolder}/node_modules/.bin/jest",
-			"args": ["source/utils/__tests__/agent.test.ts", "--runInBand"],
-			"runtimeArgs": ["--loader", "ts-node/esm"],
-			"console": "integratedTerminal",
-			"skipFiles": ["<node_internals>/**"],
-			"envFile": "${workspaceFolder}/.env"
-		},
-		{
-			"name": "Debug React Init Tests",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceFolder}/node_modules/.bin/jest",
-			"args": ["source/__tests__/react-init.test.tsx", "--runInBand"],
-			"runtimeArgs": ["--loader", "ts-node/esm"],
-			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
 			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug: chat",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "chat"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug: models",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "models"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug: assistants",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "assistants"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug: create -i",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "create", "-i"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug: --ui",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["source/cli.tsx", "--ui"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug Current File",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+			"args": ["${file}"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Debug Tests",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
+			"args": ["--serial"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"preLaunchTask": "npm: build",
+			"skipFiles": ["<node_internals>/**"]
+		}
+	],
+	"inputs": [
+		{
+			"id": "cliArgs",
+			"type": "promptString",
+			"description": "CLI arguments (e.g., 'chat -m \"Hello\"', 'auth', 'models')"
 		}
 	]
 }

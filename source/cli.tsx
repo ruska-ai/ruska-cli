@@ -9,6 +9,7 @@ import {runAssistantsCommand} from './commands/assistants.js';
 import {runAssistantCommand} from './commands/assistant.js';
 import {runModelsCommand} from './commands/models.js';
 import {runCreateAssistantCommand} from './commands/create-assistant.js';
+import {runChatCommand} from './commands/chat.js';
 
 const cli = meow(
 	`
@@ -19,11 +20,17 @@ const cli = meow(
 	  auth              Configure API authentication
 	  assistants        List your assistants
 	  assistant <id>    Get assistant by ID
+	  chat <id> <msg>   Chat with an assistant
 	  create            Create a new assistant
 	  models            List available models
 
 	Options
 	  --ui              Launch interactive TUI mode
+
+	Chat Options
+	  --json            Output as newline-delimited JSON (auto-enabled when piped)
+	  -m, --message     Message to send (alternative to positional arg)
+	  -t, --thread      Thread ID for continuing a conversation
 
 	Create Options
 	  --name            Assistant name (required)
@@ -37,6 +44,10 @@ const cli = meow(
 	  $ ruska auth                                    # Configure API key and host
 	  $ ruska assistants                              # List your assistants
 	  $ ruska assistant eed8d8b3-3dcd-4396-afba-...   # Get assistant details
+	  $ ruska chat <id> "Hello, how are you?"        # New conversation
+	  $ ruska chat <id> "Follow up" -t <thread-id>   # Continue conversation
+	  $ ruska chat <id> "Hello" --json               # Output as NDJSON
+	  $ ruska chat <id> "Hello" | jq '.type'         # Pipe to jq
 	  $ ruska create --name "My Agent" --model openai:gpt-4.1-mini
 	  $ ruska create -i                               # Interactive create mode
 	  $ ruska models                                  # List available models
@@ -48,6 +59,18 @@ const cli = meow(
 			ui: {
 				type: 'boolean',
 				default: false,
+			},
+			json: {
+				type: 'boolean',
+				default: false,
+			},
+			message: {
+				type: 'string',
+				shortFlag: 'm',
+			},
+			thread: {
+				type: 'string',
+				shortFlag: 't',
 			},
 			interactive: {
 				type: 'boolean',
@@ -108,6 +131,27 @@ async function main() {
 
 		case 'models': {
 			await runModelsCommand();
+			break;
+		}
+
+		case 'chat': {
+			const assistantId = args[0];
+			const message = args.slice(1).join(' ') || cli.flags.message;
+			const threadId = cli.flags.thread;
+
+			if (!assistantId || !message) {
+				console.error(
+					'Usage: ruska chat <assistant-id> "<message>" [--thread <id>]',
+				);
+				console.log('Example: ruska chat abc-123 "Hello, how are you?"');
+				console.log('         ruska chat abc-123 "Follow up" -t <thread-id>');
+				process.exit(1);
+			}
+
+			await runChatCommand(assistantId, message, {
+				json: cli.flags.json,
+				threadId,
+			});
 			break;
 		}
 

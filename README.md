@@ -186,3 +186,29 @@ Config is stored at `~/.ruska/auth.json`:
 	"host": "https://chat.ruska.ai"
 }
 ```
+
+## Examples
+
+**Chat with Python Agent**
+
+_Request:_
+
+```bash
+ruska chat e5120812-3bcc-4b1e-93fb-3c1264291dfe \
+  "Provide first 20 of fib using python_sandbox" \
+  --json \
+| jq -r '.response.messages[-1].content'
+```
+
+_Response:_
+
+```log
+> Ledger Snapshot:
+> Goal: Provide first 20 Fibonacci numbers using Python.
+> Now: Completed Fibonacci sequence calculation.
+> Next: None.
+> Open Questions: None.
+
+The first 20 Fibonacci numbers are:
+0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181.
+```

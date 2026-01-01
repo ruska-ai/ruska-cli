@@ -96,3 +96,7 @@ export const hostPresets = {
 } as const;
 
 export type HostPreset = keyof typeof hostPresets;
+
+// Stream types
+export * from './stream.js';
+export * from './output.js';
