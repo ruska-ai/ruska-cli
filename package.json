@@ -1,11 +1,14 @@
 {
-	"name": "shell",
-	"version": "0.0.0",
+	"name": "ruska",
+	"version": "0.0.1",
+	"description": "CLI for Orchestra - AI Agent Orchestration Platform",
 	"license": "MIT",
-	"bin": "dist/cli.js",
+	"bin": {
+		"ruska": "dist/cli.js"
+	},
 	"type": "module",
 	"engines": {
-		"node": ">=16"
+		"node": ">=18"
 	},
 	"scripts": {
 		"start": "npm run build && node dist/cli.js",
@@ -13,7 +16,8 @@
 		"format:check": "prettier --check .",
 		"build": "tsc",
 		"dev": "tsc --watch",
-		"test": "xo && npm run build && ava"
+		"test": "xo && npm run build && ava",
+		"pacakge": "npm i && npm run build && npm link"
 	},
 	"files": [
 		"dist"
@@ -24,6 +28,8 @@
 		"ink-big-text": "^2.0.0",
 		"ink-gradient": "^3.0.0",
 		"ink-select-input": "^6.2.0",
+		"ink-spinner": "^5.0.0",
+		"ink-text-input": "^6.0.0",
 		"meow": "^11.0.0",
 		"react": "^18.2.0"
 	},
