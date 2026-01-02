@@ -35,6 +35,7 @@ type ChatCommandProps = {
  * A message block groups consecutive messages with the same type + name
  */
 type MessageBlock = {
+	id: string;
 	type: string | undefined;
 	name: string | undefined;
 	content: string;
@@ -60,8 +61,12 @@ function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
 		) {
 			currentBlock.content += text;
 		} else {
-			// Start a new block
+			// Start a new block with a stable id
+			const blockId = `${message.type ?? 'msg'}-${message.name ?? 'default'}-${
+				blocks.length
+			}`;
 			blocks.push({
+				id: blockId,
 				type: message.type,
 				name: message.name,
 				content: text,
@@ -193,8 +198,8 @@ function ChatCommandTui({
 			<StatusIndicator status={status} />
 
 			{/* Message Blocks */}
-			{messageBlocks.map((block, index) => (
-				<Box key={index} marginTop={1} flexDirection="column">
+			{messageBlocks.map(block => (
+				<Box key={block.id} marginTop={1} flexDirection="column">
 					{block.type === 'tool' ? (
 						<>
 							<Text dimColor color="cyan">

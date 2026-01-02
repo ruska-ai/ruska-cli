@@ -12,9 +12,9 @@ export type StreamEventType = 'messages' | 'values' | 'error';
  * Content block for multi-modal messages
  */
 export type ContentBlock = {
+	[key: string]: unknown;
 	text?: string;
 	type?: string;
-	[key: string]: unknown;
 };
 
 /**
