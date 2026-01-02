@@ -5,11 +5,12 @@
 
 import {useState, useEffect, useRef, useCallback} from 'react';
 import type {Config} from '../types/index.js';
-import type {
-	StreamRequest,
-	StreamEvent,
-	StreamHandle,
-	ValuesPayload,
+import {
+	extractContent,
+	type StreamRequest,
+	type StreamEvent,
+	type StreamHandle,
+	type ValuesPayload,
 } from '../types/stream.js';
 import {
 	StreamService,
@@ -90,11 +91,7 @@ export function useStream(
 					switch (event.type) {
 						case 'messages': {
 							// Accumulate content from message chunks
-							const rawContent = event.payload[0]?.content;
-							const text =
-								typeof rawContent === 'string'
-									? rawContent
-									: rawContent?.[0]?.text;
+							const text = extractContent(event.payload[0]?.content);
 
 							if (text) {
 								accumulatedContent += text;

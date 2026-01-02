@@ -33,6 +33,20 @@ export type MessagePayload = {
 };
 
 /**
+ * Extract text content from a MessagePayload.
+ * Handles both string content and multi-modal content blocks.
+ */
+export function extractContent(
+	content: string | ContentBlock[] | undefined,
+): string | undefined {
+	if (typeof content === 'string') {
+		return content;
+	}
+
+	return content?.[0]?.text;
+}
+
+/**
  * Values chunk payload from 'values' events
  * This contains the complete final response object
  */

@@ -7,7 +7,12 @@ import process from 'node:process';
 import React, {useState, useEffect, useMemo} from 'react';
 import {render, Text, Box, useApp} from 'ink';
 import Spinner from 'ink-spinner';
-import type {Config, StreamRequest, ValuesPayload} from '../types/index.js';
+import {
+	extractContent,
+	type Config,
+	type StreamRequest,
+	type ValuesPayload,
+} from '../types/index.js';
 import {loadConfig} from '../lib/config.js';
 import {useStream, type StreamStatus} from '../hooks/use-stream.js';
 import {OutputFormatter} from '../lib/output/formatter.js';
@@ -201,11 +206,10 @@ async function runJsonMode(
 			switch (event.type) {
 				case 'messages': {
 					// Output content chunks as NDJSON
-					if (
-						event.payload.content &&
-						typeof event.payload.content === 'string'
-					) {
-						writeJson(formatter.chunk(event.payload.content));
+					const text = extractContent(event.payload[0]?.content);
+
+					if (text) {
+						writeJson(formatter.chunk(text));
 					}
 
 					// NOTE: Ignoring tool_calls per requirements
