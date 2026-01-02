@@ -94,6 +94,7 @@ export function useStream(
 							if (payload) {
 								setMessages(previous => [...previous, payload]);
 							}
+
 							break;
 						}
 

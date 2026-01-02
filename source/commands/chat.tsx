@@ -46,8 +46,8 @@ type MessageBlock = {
 function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
 	const blocks: MessageBlock[] = [];
 
-	for (const msg of messages) {
-		const text = extractContent(msg.content);
+	for (const message of messages) {
+		const text = extractContent(message.content);
 		if (!text) continue;
 
 		const currentBlock = blocks[blocks.length - 1];
@@ -55,15 +55,15 @@ function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
 		// Check if this message continues the current block (same type + name)
 		if (
 			currentBlock &&
-			currentBlock.type === msg.type &&
-			currentBlock.name === msg.name
+			currentBlock.type === message.type &&
+			currentBlock.name === message.name
 		) {
 			currentBlock.content += text;
 		} else {
 			// Start a new block
 			blocks.push({
-				type: msg.type,
-				name: msg.name,
+				type: message.type,
+				name: message.name,
 				content: text,
 			});
 		}
@@ -197,7 +197,7 @@ function ChatCommandTui({
 				<Box key={index} marginTop={1} flexDirection="column">
 					{block.type === 'tool' ? (
 						<>
-							<Text color="cyan" dimColor>
+							<Text dimColor color="cyan">
 								Tool Output{block.name ? `: ${block.name}` : ''}
 							</Text>
 							<Box marginLeft={2}>
