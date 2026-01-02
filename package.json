@@ -2,8 +2,8 @@
 	"name": "@ruska/cli",
 	"version": "0.1.2",
 	"description": "CLI for Orchestra - AI Agent Orchestration Platform",
-	"license": "MIT",
-	"author": "RUSKA <contact@ruska.ai>",
+	"license": "Apache-2.0",
+	"author": "RUSKA <reggleston@ruska.ai>",
 	"homepage": "https://github.com/enso-labs/orchestra/tree/main/cli#readme",
 	"repository": {
 		"type": "git",
