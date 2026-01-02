@@ -7,7 +7,13 @@ import process from 'node:process';
 import React, {useState, useEffect, useMemo} from 'react';
 import {render, Text, Box, useApp} from 'ink';
 import Spinner from 'ink-spinner';
-import type {Config, StreamRequest, ValuesPayload} from '../types/index.js';
+import {
+	extractContent,
+	type Config,
+	type MessagePayload,
+	type StreamRequest,
+	type ValuesPayload,
+} from '../types/index.js';
 import {loadConfig} from '../lib/config.js';
 import {useStream, type StreamStatus} from '../hooks/use-stream.js';
 import {OutputFormatter} from '../lib/output/formatter.js';
@@ -24,6 +30,52 @@ type ChatCommandProps = {
 	readonly assistantId?: string;
 	readonly threadId?: string;
 };
+
+/**
+ * A message block groups consecutive messages with the same type + name
+ */
+type MessageBlock = {
+	id: string;
+	type: string | undefined;
+	name: string | undefined;
+	content: string;
+};
+
+/**
+ * Group messages into blocks by type + name boundaries
+ */
+function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
+	const blocks: MessageBlock[] = [];
+
+	for (const message of messages) {
+		const text = extractContent(message.content);
+		if (!text) continue;
+
+		const currentBlock = blocks[blocks.length - 1];
+
+		// Check if this message continues the current block (same type + name)
+		if (
+			currentBlock &&
+			currentBlock.type === message.type &&
+			currentBlock.name === message.name
+		) {
+			currentBlock.content += text;
+		} else {
+			// Start a new block with a stable id
+			const blockId = `${message.type ?? 'msg'}-${message.name ?? 'default'}-${
+				blocks.length
+			}`;
+			blocks.push({
+				id: blockId,
+				type: message.type,
+				name: message.name,
+				content: text,
+			});
+		}
+	}
+
+	return blocks;
+}
 
 /**
  * Status indicator component for TUI mode
@@ -102,7 +154,13 @@ function ChatCommandTui({
 	/* eslint-enable @typescript-eslint/naming-convention */
 
 	// Stream
-	const {status, content, error} = useStream(config, request);
+	const {status, messages, error} = useStream(config, request);
+
+	// Group messages into blocks by type + name boundaries
+	const messageBlocks = useMemo(
+		() => groupMessagesIntoBlocks(messages),
+		[messages],
+	);
 
 	// Exit on completion
 	useEffect(() => {
@@ -139,12 +197,23 @@ function ChatCommandTui({
 		<Box flexDirection="column">
 			<StatusIndicator status={status} />
 
-			{/* Content */}
-			{content && (
-				<Box marginTop={1}>
-					<Text>{content}</Text>
+			{/* Message Blocks */}
+			{messageBlocks.map(block => (
+				<Box key={block.id} marginTop={1} flexDirection="column">
+					{block.type === 'tool' ? (
+						<>
+							<Text dimColor color="cyan">
+								Tool Output{block.name ? `: ${block.name}` : ''}
+							</Text>
+							<Box marginLeft={2}>
+								<Text dimColor>{block.content}</Text>
+							</Box>
+						</>
+					) : (
+						<Text>{block.content}</Text>
+					)}
 				</Box>
-			)}
+			))}
 
 			{/* Done indicator */}
 			{status === 'done' && (
@@ -201,11 +270,10 @@ async function runJsonMode(
 			switch (event.type) {
 				case 'messages': {
 					// Output content chunks as NDJSON
-					if (
-						event.payload.content &&
-						typeof event.payload.content === 'string'
-					) {
-						writeJson(formatter.chunk(event.payload.content));
+					const text = extractContent(event.payload[0]?.content);
+
+					if (text) {
+						writeJson(formatter.chunk(text));
 					}
 
 					// NOTE: Ignoring tool_calls per requirements

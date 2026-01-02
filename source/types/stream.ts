@@ -9,12 +9,22 @@
 export type StreamEventType = 'messages' | 'values' | 'error';
 
 /**
+ * Content block for multi-modal messages
+ */
+export type ContentBlock = {
+	[key: string]: unknown;
+	text?: string;
+	type?: string;
+};
+
+/**
  * Message chunk payload from 'messages' events
  */
 export type MessagePayload = {
 	id?: string;
 	type?: string;
-	content: string | undefined;
+	name?: string;
+	content: string | ContentBlock[] | undefined;
 	tool_calls?: Array<{
 		id: string;
 		name: string;
@@ -22,6 +32,20 @@ export type MessagePayload = {
 	}>;
 	response_metadata?: Record<string, unknown>;
 };
+
+/**
+ * Extract text content from a MessagePayload.
+ * Handles both string content and multi-modal content blocks.
+ */
+export function extractContent(
+	content: string | ContentBlock[] | undefined,
+): string | undefined {
+	if (typeof content === 'string') {
+		return content;
+	}
+
+	return content?.[0]?.text;
+}
 
 /**
  * Values chunk payload from 'values' events
@@ -44,7 +68,7 @@ export type ErrorPayload = {
  * Discriminated union for stream events
  */
 export type StreamEvent =
-	| {type: 'messages'; payload: MessagePayload; metadata?: unknown}
+	| {type: 'messages'; payload: MessagePayload[]; metadata?: unknown}
 	| {type: 'values'; payload: ValuesPayload}
 	| {type: 'error'; payload: ErrorPayload};
 

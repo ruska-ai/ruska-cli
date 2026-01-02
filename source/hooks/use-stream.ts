@@ -5,11 +5,12 @@
 
 import {useState, useEffect, useRef, useCallback} from 'react';
 import type {Config} from '../types/index.js';
-import type {
-	StreamRequest,
-	StreamEvent,
-	StreamHandle,
-	ValuesPayload,
+import {
+	type MessagePayload,
+	type StreamRequest,
+	type StreamEvent,
+	type StreamHandle,
+	type ValuesPayload,
 } from '../types/stream.js';
 import {
 	StreamService,
@@ -26,7 +27,7 @@ export type StreamStatus =
 export type UseStreamResult = {
 	status: StreamStatus;
 	events: StreamEvent[];
-	content: string;
+	messages: MessagePayload[];
 	finalResponse: ValuesPayload | undefined;
 	error: string | undefined;
 	errorCode: number | undefined;
@@ -43,7 +44,7 @@ export function useStream(
 ): UseStreamResult {
 	const [status, setStatus] = useState<StreamStatus>('idle');
 	const [events, setEvents] = useState<StreamEvent[]>([]);
-	const [content, setContent] = useState('');
+	const [messages, setMessages] = useState<MessagePayload[]>([]);
 	const [finalResponse, setFinalResponse] = useState<
 		ValuesPayload | undefined
 	>();
@@ -64,7 +65,7 @@ export function useStream(
 		const run = async () => {
 			setStatus('connecting');
 			setEvents([]);
-			setContent('');
+			setMessages([]);
 			setFinalResponse(undefined);
 			setError(undefined);
 			setErrorCode(undefined);
@@ -79,7 +80,6 @@ export function useStream(
 				}
 
 				setStatus('streaming');
-				let accumulatedContent = '';
 
 				for await (const event of handle.events) {
 					if (cancelled) break;
@@ -89,13 +89,10 @@ export function useStream(
 					// Handle different event types
 					switch (event.type) {
 						case 'messages': {
-							// Accumulate content from message chunks
-							if (
-								event.payload.content &&
-								typeof event.payload.content === 'string'
-							) {
-								accumulatedContent += event.payload.content;
-								setContent(accumulatedContent);
+							// Append message payload to messages array
+							const payload = event.payload[0];
+							if (payload) {
+								setMessages(previous => [...previous, payload]);
 							}
 
 							break;
@@ -145,5 +142,13 @@ export function useStream(
 		};
 	}, [config, request]);
 
-	return {status, events, content, finalResponse, error, errorCode, abort};
+	return {
+		status,
+		events,
+		messages,
+		finalResponse,
+		error,
+		errorCode,
+		abort,
+	};
 }

@@ -3,14 +3,10 @@
 	"configurations": [
 		{
 			"name": "Debug CLI (with prompt)",
-			"type": "node",
+			"type": "node-terminal",
 			"request": "launch",
-			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-			"args": ["source/cli.tsx", "${input:cliArgs}"],
-			"cwd": "${workspaceFolder}",
-			"console": "integratedTerminal",
-			"internalConsoleOptions": "neverOpen",
-			"skipFiles": ["<node_internals>/**"]
+			"command": "node --import tsx source/cli.tsx ${input:cliArgs}",
+			"cwd": "${workspaceFolder}"
 		},
 		{
 			"name": "Debug: auth",
