@@ -246,7 +246,7 @@ node dist/cli.js --help
 
 ## Deployment
 
-Publishing `@ruska/ruska-cli` to NPM.
+Publishing `@ruska/cli` to NPM.
 
 ### Automated (CI/CD)
 

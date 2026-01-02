@@ -94,7 +94,7 @@ jobs:
     needs: [quality-check, validate-version]
     environment:
       name: npm-publish
-      url: https://www.npmjs.com/package/@ruska/ruska-cli
+      url: https://www.npmjs.com/package/@ruska/cli
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -127,11 +127,11 @@ jobs:
         run: |
           echo "## Published Package" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** @ruska/ruska-cli" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** @ruska/cli" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.validate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Prerelease:** ${{ needs.validate-version.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[View on NPM](https://www.npmjs.com/package/@ruska/ruska-cli)" >> $GITHUB_STEP_SUMMARY
+          echo "[View on NPM](https://www.npmjs.com/package/@ruska/cli)" >> $GITHUB_STEP_SUMMARY
 
   #################################################################
   ## Post-Publish Verification
@@ -147,11 +147,11 @@ jobs:
       - name: Verify package on NPM
         run: |
           VERSION="${{ needs.validate-version.outputs.version }}"
-          echo "Verifying @ruska/ruska-cli@$VERSION on NPM..."
+          echo "Verifying @ruska/cli@$VERSION on NPM..."
 
           # Retry up to 5 times with 10s delay
           for i in {1..5}; do
-            if npm view "@ruska/ruska-cli@$VERSION" version 2>/dev/null; then
+            if npm view "@ruska/cli@$VERSION" version 2>/dev/null; then
               echo "Package verified on NPM!"
               exit 0
             fi
@@ -165,6 +165,6 @@ jobs:
       - name: Test installation
         run: |
           VERSION="${{ needs.validate-version.outputs.version }}"
-          npm install -g "@ruska/ruska-cli@$VERSION"
+          npm install -g "@ruska/cli@$VERSION"
           ruska --help
         working-directory: .

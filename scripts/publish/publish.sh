@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Manual NPM Publish Script for @ruska/ruska-cli
+# Manual NPM Publish Script for @ruska/cli
 #
 # Usage: ./scripts/publish/publish.sh [--dry-run] [--skip-tests]
 #
@@ -13,7 +13,7 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-PACKAGE_NAME="@ruska/ruska-cli"
+PACKAGE_NAME="@ruska/cli"
 REQUIRED_NODE_VERSION="18"
 REQUIRED_BRANCH="master"
 

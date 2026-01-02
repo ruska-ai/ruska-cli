@@ -1,5 +1,5 @@
 {
-	"name": "@ruska/ruska-cli",
+	"name": "@ruska/cli",
 	"version": "0.1.1",
 	"description": "CLI for Orchestra - AI Agent Orchestration Platform",
 	"license": "MIT",
