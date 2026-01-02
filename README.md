@@ -5,6 +5,16 @@ Command-line interface for Orchestra - AI Agent Orchestration Platform.
 ## Install
 
 ```bash
+# Install globally from npm
+npm install -g @ruska/cli
+
+# Or run directly with npx
+npx @ruska/cli --help
+```
+
+### Development Setup
+
+```bash
 # From the cli directory
 npm install
 npm run build
