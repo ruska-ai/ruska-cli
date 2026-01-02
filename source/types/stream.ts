@@ -23,6 +23,7 @@ export type ContentBlock = {
 export type MessagePayload = {
 	id?: string;
 	type?: string;
+	name?: string;
 	content: string | ContentBlock[] | undefined;
 	tool_calls?: Array<{
 		id: string;

@@ -10,6 +10,7 @@ import Spinner from 'ink-spinner';
 import {
 	extractContent,
 	type Config,
+	type MessagePayload,
 	type StreamRequest,
 	type ValuesPayload,
 } from '../types/index.js';
@@ -29,6 +30,47 @@ type ChatCommandProps = {
 	readonly assistantId?: string;
 	readonly threadId?: string;
 };
+
+/**
+ * A message block groups consecutive messages with the same type + name
+ */
+type MessageBlock = {
+	type: string | undefined;
+	name: string | undefined;
+	content: string;
+};
+
+/**
+ * Group messages into blocks by type + name boundaries
+ */
+function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
+	const blocks: MessageBlock[] = [];
+
+	for (const msg of messages) {
+		const text = extractContent(msg.content);
+		if (!text) continue;
+
+		const currentBlock = blocks[blocks.length - 1];
+
+		// Check if this message continues the current block (same type + name)
+		if (
+			currentBlock &&
+			currentBlock.type === msg.type &&
+			currentBlock.name === msg.name
+		) {
+			currentBlock.content += text;
+		} else {
+			// Start a new block
+			blocks.push({
+				type: msg.type,
+				name: msg.name,
+				content: text,
+			});
+		}
+	}
+
+	return blocks;
+}
 
 /**
  * Status indicator component for TUI mode
@@ -109,24 +151,11 @@ function ChatCommandTui({
 	// Stream
 	const {status, messages, error} = useStream(config, request);
 
-	// Accumulate content and tool output from messages
-	const {content, toolOutput} = useMemo(() => {
-		let accumulatedContent = '';
-		let accumulatedToolOutput = '';
-
-		for (const msg of messages) {
-			const text = extractContent(msg.content);
-			if (text) {
-				if (msg.type === 'tool') {
-					accumulatedToolOutput += text;
-				} else {
-					accumulatedContent += text;
-				}
-			}
-		}
-
-		return {content: accumulatedContent, toolOutput: accumulatedToolOutput};
-	}, [messages]);
+	// Group messages into blocks by type + name boundaries
+	const messageBlocks = useMemo(
+		() => groupMessagesIntoBlocks(messages),
+		[messages],
+	);
 
 	// Exit on completion
 	useEffect(() => {
@@ -163,24 +192,23 @@ function ChatCommandTui({
 		<Box flexDirection="column">
 			<StatusIndicator status={status} />
 
-			{/* Tool Output */}
-			{toolOutput && (
-				<Box marginTop={1} flexDirection="column">
-					<Text color="cyan" dimColor>
-						Tool Output:
-					</Text>
-					<Box marginLeft={2}>
-						<Text dimColor>{toolOutput}</Text>
-					</Box>
+			{/* Message Blocks */}
+			{messageBlocks.map((block, index) => (
+				<Box key={index} marginTop={1} flexDirection="column">
+					{block.type === 'tool' ? (
+						<>
+							<Text color="cyan" dimColor>
+								Tool Output{block.name ? `: ${block.name}` : ''}
+							</Text>
+							<Box marginLeft={2}>
+								<Text dimColor>{block.content}</Text>
+							</Box>
+						</>
+					) : (
+						<Text>{block.content}</Text>
+					)}
 				</Box>
-			)}
-
-			{/* Content */}
-			{content && (
-				<Box marginTop={1}>
-					<Text>{content}</Text>
-				</Box>
-			)}
+			))}
 
 			{/* Done indicator */}
 			{status === 'done' && (
