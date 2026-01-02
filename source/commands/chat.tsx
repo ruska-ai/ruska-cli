@@ -107,7 +107,26 @@ function ChatCommandTui({
 	/* eslint-enable @typescript-eslint/naming-convention */
 
 	// Stream
-	const {status, content, error} = useStream(config, request);
+	const {status, messages, error} = useStream(config, request);
+
+	// Accumulate content and tool output from messages
+	const {content, toolOutput} = useMemo(() => {
+		let accumulatedContent = '';
+		let accumulatedToolOutput = '';
+
+		for (const msg of messages) {
+			const text = extractContent(msg.content);
+			if (text) {
+				if (msg.type === 'tool') {
+					accumulatedToolOutput += text;
+				} else {
+					accumulatedContent += text;
+				}
+			}
+		}
+
+		return {content: accumulatedContent, toolOutput: accumulatedToolOutput};
+	}, [messages]);
 
 	// Exit on completion
 	useEffect(() => {
@@ -143,6 +162,18 @@ function ChatCommandTui({
 	return (
 		<Box flexDirection="column">
 			<StatusIndicator status={status} />
+
+			{/* Tool Output */}
+			{toolOutput && (
+				<Box marginTop={1} flexDirection="column">
+					<Text color="cyan" dimColor>
+						Tool Output:
+					</Text>
+					<Box marginLeft={2}>
+						<Text dimColor>{toolOutput}</Text>
+					</Box>
+				</Box>
+			)}
 
 			{/* Content */}
 			{content && (
