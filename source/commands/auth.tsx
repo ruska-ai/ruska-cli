@@ -197,7 +197,7 @@ function AuthCommand() {
 					<Text>Enter your API key: </Text>
 					<TextInput
 						value={apiKey}
-						placeholder="enso_..."
+						placeholder="otk_..."
 						mask="*"
 						onChange={setApiKey}
 						onSubmit={handleApiKeySubmit}

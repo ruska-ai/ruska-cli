@@ -331,7 +331,7 @@ Config is stored at `~/.ruska/auth.json`:
 
 ```json
 {
-	"apiKey": "enso_...",
+	"apiKey": "otk_...",
 	"host": "https://chat.ruska.ai"
 }
 ```
