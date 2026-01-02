@@ -9,12 +9,21 @@
 export type StreamEventType = 'messages' | 'values' | 'error';
 
 /**
+ * Content block for multi-modal messages
+ */
+export type ContentBlock = {
+	text?: string;
+	type?: string;
+	[key: string]: unknown;
+};
+
+/**
  * Message chunk payload from 'messages' events
  */
 export type MessagePayload = {
 	id?: string;
 	type?: string;
-	content: string | undefined;
+	content: string | ContentBlock[] | undefined;
 	tool_calls?: Array<{
 		id: string;
 		name: string;
@@ -44,7 +53,7 @@ export type ErrorPayload = {
  * Discriminated union for stream events
  */
 export type StreamEvent =
-	| {type: 'messages'; payload: MessagePayload; metadata?: unknown}
+	| {type: 'messages'; payload: MessagePayload[]; metadata?: unknown}
 	| {type: 'values'; payload: ValuesPayload}
 	| {type: 'error'; payload: ErrorPayload};
 

@@ -90,11 +90,14 @@ export function useStream(
 					switch (event.type) {
 						case 'messages': {
 							// Accumulate content from message chunks
-							if (
-								event.payload.content &&
-								typeof event.payload.content === 'string'
-							) {
-								accumulatedContent += event.payload.content;
+							const rawContent = event.payload[0]?.content;
+							const text =
+								typeof rawContent === 'string'
+									? rawContent
+									: rawContent?.[0]?.text;
+
+							if (text) {
+								accumulatedContent += text;
 								setContent(accumulatedContent);
 							}
 
