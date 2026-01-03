@@ -24,12 +24,14 @@ import {
 	StreamService,
 	StreamConnectionError,
 } from '../lib/services/stream-service.js';
+import {truncate, type TruncateOptions} from '../lib/output/truncate.js';
 
 type ChatCommandProps = {
 	readonly message: string;
 	readonly isJsonMode: boolean;
 	readonly assistantId?: string;
 	readonly threadId?: string;
+	readonly truncateOptions?: TruncateOptions;
 };
 
 /**
@@ -134,6 +136,7 @@ function ChatCommandTui({
 	message,
 	assistantId,
 	threadId,
+	truncateOptions,
 }: Omit<ChatCommandProps, 'isJsonMode'>) {
 	const {exit} = useApp();
 	const [config, setConfig] = useState<Config | undefined>();
@@ -222,8 +225,24 @@ function ChatCommandTui({
 							<Text dimColor color="cyan">
 								Tool Output{block.name ? `: ${block.name}` : ''}
 							</Text>
-							<Box marginLeft={2}>
-								<Text dimColor>{block.content}</Text>
+							<Box marginLeft={2} flexDirection="column">
+								{(() => {
+									if (!truncateOptions) {
+										return <Text dimColor>{block.content}</Text>;
+									}
+
+									const result = truncate(block.content, truncateOptions);
+									return (
+										<>
+											<Text dimColor>{result.text}</Text>
+											{result.wasTruncated && (
+												<Text dimColor color="yellow">
+													(use --no-truncate for full output)
+												</Text>
+											)}
+										</>
+									);
+								})()}
 							</Box>
 						</>
 					) : (
@@ -354,6 +373,7 @@ function ChatCommand({
 	isJsonMode,
 	assistantId,
 	threadId,
+	truncateOptions,
 }: ChatCommandProps) {
 	const {exit} = useApp();
 
@@ -377,6 +397,7 @@ function ChatCommand({
 			message={message}
 			assistantId={assistantId}
 			threadId={threadId}
+			truncateOptions={truncateOptions}
 		/>
 	);
 }
@@ -386,7 +407,12 @@ function ChatCommand({
  */
 export async function runChatCommand(
 	message: string,
-	options: {json?: boolean; assistantId?: string; threadId?: string} = {},
+	options: {
+		json?: boolean;
+		assistantId?: string;
+		threadId?: string;
+		truncateOptions?: TruncateOptions;
+	} = {},
 ): Promise<void> {
 	// Auto-detect: use JSON mode if not TTY (piped) or explicitly requested
 	const isJsonMode = options.json ?? !checkIsTty();
@@ -397,6 +423,7 @@ export async function runChatCommand(
 			isJsonMode={isJsonMode}
 			assistantId={options.assistantId}
 			threadId={options.threadId}
+			truncateOptions={options.truncateOptions}
 		/>,
 	);
 	await waitUntilExit();
