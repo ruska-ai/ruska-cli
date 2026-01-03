@@ -85,11 +85,12 @@ function extractModelFromEvents(events: StreamEvent[]): string | undefined {
 	for (let i = events.length - 1; i >= 0; i--) {
 		const event = events[i];
 		if (event?.type === 'messages') {
-			const msg = event.payload[0];
-			const modelName = msg?.response_metadata?.['model_name'];
+			const message = event.payload[0];
+			const modelName = message?.response_metadata?.['model_name'];
 			if (modelName) return String(modelName);
 		}
 	}
+
 	return undefined;
 }
 
@@ -243,7 +244,8 @@ function ChatCommandTui({
 					)}
 					{request?.metadata?.thread_id && (
 						<Text dimColor>
-							Continue: ruska chat "message" -t {request.metadata.thread_id}
+							Continue: ruska chat &quot;message&quot; -t{' '}
+							{request.metadata.thread_id}
 						</Text>
 					)}
 				</Box>
