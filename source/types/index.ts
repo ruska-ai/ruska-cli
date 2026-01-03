@@ -88,6 +88,15 @@ export type ModelsResponse = {
 };
 
 /**
+ * Response from GET /api/health
+ */
+export type HealthResponse = {
+	status: string;
+	message: string;
+	version: string;
+};
+
+/**
  * Host presets for environment selection
  */
 export const hostPresets = {

@@ -4,6 +4,7 @@ import {
 	type UserInfo,
 	type AssistantsSearchResponse,
 	type ModelsResponse,
+	type HealthResponse,
 	type CreateAssistantRequest,
 	type CreateAssistantResponse,
 } from '../types/index.js';
@@ -167,6 +168,50 @@ export async function fetchModels(
 		}
 
 		const data = (await response.json()) as ModelsResponse;
+		return {
+			success: true,
+			data,
+		};
+	} catch (error: unknown) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error occurred',
+		};
+	}
+}
+
+/**
+ * Fetch health status (no auth required)
+ */
+export async function fetchHealth(
+	host: string,
+): Promise<ApiResponse<HealthResponse>> {
+	const url = `${host.replace(/\/$/, '')}/api/info/health`;
+
+	try {
+		const response = await fetch(url, {
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			let errorMessage: string;
+			try {
+				const errorJson = JSON.parse(errorText) as {detail?: string};
+				errorMessage = errorJson.detail ?? `HTTP ${response.status}`;
+			} catch {
+				errorMessage = errorText || `HTTP ${response.status}`;
+			}
+
+			return {
+				success: false,
+				error: errorMessage,
+			};
+		}
+
+		const data = (await response.json()) as HealthResponse;
 		return {
 			success: true,
 			data,

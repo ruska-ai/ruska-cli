@@ -10,6 +10,8 @@ import {runAssistantCommand} from './commands/assistant.js';
 import {runModelsCommand} from './commands/models.js';
 import {runCreateAssistantCommand} from './commands/create-assistant.js';
 import {runChatCommand} from './commands/chat.js';
+import {runVersionCommand} from './commands/version.js';
+import {runHealthCommand} from './commands/health.js';
 
 const cli = meow(
 	`
@@ -23,6 +25,8 @@ const cli = meow(
 	  chat <message>    Chat with the LLM (optionally with an assistant)
 	  create            Create a new assistant
 	  models            List available models
+	  version           Show CLI and API version
+	  health            Check API health status
 
 	Options
 	  --ui              Launch interactive TUI mode
@@ -177,6 +181,16 @@ async function main() {
 				systemPrompt: cli.flags.systemPrompt,
 				tools: cli.flags.tools,
 			});
+			break;
+		}
+
+		case 'version': {
+			await runVersionCommand();
+			break;
+		}
+
+		case 'health': {
+			await runHealthCommand();
 			break;
 		}
 
