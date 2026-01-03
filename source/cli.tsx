@@ -22,7 +22,7 @@ const cli = meow(
 	  auth              Configure API authentication
 	  assistants        List your assistants
 	  assistant <id>    Get assistant by ID
-	  chat <message>    Chat with an assistant or continue a thread
+	  chat <message>    Chat with the LLM (optionally with an assistant)
 	  create            Create a new assistant
 	  models            List available models
 	  version           Show CLI and API version
@@ -32,7 +32,7 @@ const cli = meow(
 	  --ui              Launch interactive TUI mode
 
 	Chat Options
-	  -a, --assistant   Assistant ID for new conversations
+	  -a, --assistant   Assistant ID (optional, uses default chat if omitted)
 	  -t, --thread      Thread ID to continue a conversation
 	  -m, --message     Message (alternative to positional arg)
 	  --json            Output as newline-delimited JSON (auto-enabled when piped)
@@ -49,7 +49,8 @@ const cli = meow(
 	  $ ruska auth                                    # Configure API key and host
 	  $ ruska assistants                              # List your assistants
 	  $ ruska assistant abc-123                       # Get assistant details
-	  $ ruska chat "Hello" -a <assistant-id>         # New conversation with assistant
+	  $ ruska chat "Hello"                           # Direct chat with default LLM
+	  $ ruska chat "Hello" -a <assistant-id>         # Chat with specific assistant
 	  $ ruska chat "Follow up" -t <thread-id>        # Continue existing thread
 	  $ ruska chat "Hello" -a <id> --json            # Output as NDJSON
 	  $ ruska chat "Query" -a <id> | jq '.type'      # Pipe to jq
@@ -153,24 +154,9 @@ async function main() {
 				(cli.flags as Record<string, unknown>)['t']?.toString();
 			const message = args.join(' ') || cli.flags.message;
 
-			// Require either assistant or thread
-			if (!assistantId && !threadId) {
-				console.error('Usage: ruska chat "<message>" -a <assistant-id>');
-				console.error('       ruska chat "<message>" -t <thread-id>');
-				console.log('');
-				console.log('Options:');
-				console.log('  -a, --assistant   Assistant ID for new conversations');
-				console.log('  -t, --thread      Thread ID to continue a conversation');
-				console.log('');
-				console.log('Examples:');
-				console.log('  ruska chat "Hello" -a abc-123');
-				console.log('  ruska chat "Follow up" -t thread-456');
-				process.exit(1);
-			}
-
 			if (!message) {
 				console.error('Error: Message is required');
-				console.error('Usage: ruska chat "<message>" -a <assistant-id>');
+				console.error('Usage: ruska chat "<message>" [-a <assistant-id>]');
 				process.exit(1);
 			}
 

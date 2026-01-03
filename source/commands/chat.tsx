@@ -11,6 +11,7 @@ import {
 	extractContent,
 	type Config,
 	type MessagePayload,
+	type StreamEvent,
 	type StreamRequest,
 	type ValuesPayload,
 } from '../types/index.js';
@@ -75,6 +76,22 @@ function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
 	}
 
 	return blocks;
+}
+
+/**
+ * Extract model name from stream events
+ */
+function extractModelFromEvents(events: StreamEvent[]): string | undefined {
+	for (let i = events.length - 1; i >= 0; i--) {
+		const event = events[i];
+		if (event?.type === 'messages') {
+			const message = event.payload[0];
+			const modelName = message?.response_metadata?.['model_name'];
+			if (modelName) return String(modelName);
+		}
+	}
+
+	return undefined;
 }
 
 /**
@@ -154,7 +171,7 @@ function ChatCommandTui({
 	/* eslint-enable @typescript-eslint/naming-convention */
 
 	// Stream
-	const {status, messages, error} = useStream(config, request);
+	const {status, messages, events, error} = useStream(config, request);
 
 	// Group messages into blocks by type + name boundaries
 	const messageBlocks = useMemo(
@@ -217,8 +234,20 @@ function ChatCommandTui({
 
 			{/* Done indicator */}
 			{status === 'done' && (
-				<Box marginTop={1}>
+				<Box marginTop={1} flexDirection="column">
 					<Text color="green">Done</Text>
+					{request?.metadata?.thread_id && (
+						<Text dimColor>Thread: {request.metadata.thread_id}</Text>
+					)}
+					{extractModelFromEvents(events) && (
+						<Text dimColor>Model: {extractModelFromEvents(events)}</Text>
+					)}
+					{request?.metadata?.thread_id && (
+						<Text dimColor>
+							Continue: ruska chat &quot;message&quot; -t{' '}
+							{request.metadata.thread_id}
+						</Text>
+					)}
 				</Box>
 			)}
 		</Box>
