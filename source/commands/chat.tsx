@@ -237,7 +237,7 @@ function ChatCommandTui({
 											<Text dimColor>{result.text}</Text>
 											{result.wasTruncated && (
 												<Text dimColor color="yellow">
-													(use --no-truncate for full output)
+													(use --full-output for full output)
 												</Text>
 											)}
 										</>

@@ -38,7 +38,7 @@ const cli = meow(
 	  --json            Output as newline-delimited JSON (auto-enabled when piped)
 	  --truncate <n>    Max characters for tool output (default: 500)
 	  --truncate-lines  Max lines for tool output (default: 10)
-	  --no-truncate     Disable truncation (show full output)
+	  --full-output     Disable truncation (show full output)
 
 	Create Options
 	  --name            Assistant name (required)
@@ -93,7 +93,7 @@ const cli = meow(
 				type: 'number',
 				default: 10,
 			},
-			noTruncate: {
+			fullOutput: {
 				type: 'boolean',
 				default: false,
 			},
@@ -179,7 +179,7 @@ async function main() {
 				json: cli.flags.json,
 				assistantId,
 				threadId,
-				truncateOptions: cli.flags.noTruncate
+				truncateOptions: cli.flags.fullOutput
 					? undefined
 					: {
 							maxLength: cli.flags.truncate,
