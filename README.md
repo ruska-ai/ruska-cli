@@ -171,15 +171,15 @@ $ ruska chat "Hello" -a <assistant-id> | jq '.type'
 
 **Options:**
 
-| Option             | Description                                        |
-| ------------------ | -------------------------------------------------- |
+| Option             | Description                                           |
+| ------------------ | ----------------------------------------------------- |
 | `-a, --assistant`  | Assistant ID (optional, uses default chat if omitted) |
-| `-t, --thread`     | Thread ID to continue an existing conversation     |
-| `-m, --message`    | Message to send (alternative to positional arg)    |
-| `--json`           | Output as newline-delimited JSON (NDJSON)          |
-| `--truncate <n>`   | Max characters for tool output (default: 500)      |
-| `--truncate-lines` | Max lines for tool output (default: 10)            |
-| `--full-output`    | Disable truncation (show full output)              |
+| `-t, --thread`     | Thread ID to continue an existing conversation        |
+| `-m, --message`    | Message to send (alternative to positional arg)       |
+| `--json`           | Output as newline-delimited JSON (NDJSON)             |
+| `--truncate <n>`   | Max characters for tool output (default: 500)         |
+| `--truncate-lines` | Max lines for tool output (default: 10)               |
+| `--full-output`    | Disable truncation (show full output)                 |
 
 **Exit codes:**
 
