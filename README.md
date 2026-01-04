@@ -35,18 +35,23 @@ $ ruska --help
     auth              Configure API authentication
     assistants        List your assistants
     assistant <id>    Get assistant by ID
-    chat <message>    Chat with an assistant or continue a thread
+    chat <message>    Chat with the LLM (optionally with an assistant)
     create            Create a new assistant
     models            List available models
+    version           Show CLI and API version
+    health            Check API health status
 
   Options
     --ui              Launch interactive TUI mode
 
   Chat Options
-    -a, --assistant   Assistant ID for new conversations
+    -a, --assistant   Assistant ID (optional, uses default chat if omitted)
     -t, --thread      Thread ID to continue a conversation
     -m, --message     Message (alternative to positional arg)
     --json            Output as newline-delimited JSON (auto-enabled when piped)
+    --truncate <n>    Max characters for tool output (default: 500)
+    --truncate-lines  Max lines for tool output (default: 10)
+    --full-output     Disable truncation (show full output)
 
   Create Options
     --name            Assistant name (required)
@@ -59,8 +64,9 @@ $ ruska --help
   Examples
     $ ruska auth                                    # Configure API key and host
     $ ruska assistants                              # List your assistants
-    $ ruska assistant eed8d8b3-3dcd-4396-afba-...   # Get assistant details
-    $ ruska chat "Hello" -a <assistant-id>         # New conversation with assistant
+    $ ruska assistant abc-123                       # Get assistant details
+    $ ruska chat "Hello"                           # Direct chat with default LLM
+    $ ruska chat "Hello" -a <assistant-id>         # Chat with specific assistant
     $ ruska chat "Follow up" -t <thread-id>        # Continue existing thread
     $ ruska chat "Hello" -a <id> --json            # Output as NDJSON
     $ ruska chat "Query" -a <id> | jq '.type'      # Pipe to jq
@@ -128,7 +134,13 @@ Tools: get_exchange_rate, convert_currency
 
 ### `ruska chat <message>`
 
-Chat with an assistant or continue a thread using streaming. Requires authentication.
+Chat with the LLM (optionally with an assistant) using streaming. Requires authentication.
+
+**Direct chat with default LLM:**
+
+```bash
+$ ruska chat "Hello, how are you?"
+```
 
 **Start a new conversation with an assistant:**
 
@@ -159,12 +171,15 @@ $ ruska chat "Hello" -a <assistant-id> | jq '.type'
 
 **Options:**
 
-| Option            | Description                                     |
-| ----------------- | ----------------------------------------------- |
-| `-a, --assistant` | Assistant ID for new conversations              |
-| `-t, --thread`    | Thread ID to continue an existing conversation  |
-| `-m, --message`   | Message to send (alternative to positional arg) |
-| `--json`          | Output as newline-delimited JSON (NDJSON)       |
+| Option             | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `-a, --assistant`  | Assistant ID (optional, uses default chat if omitted) |
+| `-t, --thread`     | Thread ID to continue an existing conversation     |
+| `-m, --message`    | Message to send (alternative to positional arg)    |
+| `--json`           | Output as newline-delimited JSON (NDJSON)          |
+| `--truncate <n>`   | Max characters for tool output (default: 500)      |
+| `--truncate-lines` | Max lines for tool output (default: 10)            |
+| `--full-output`    | Disable truncation (show full output)              |
 
 **Exit codes:**
 
@@ -226,6 +241,28 @@ All Models (15):
  - openai:gpt-4.1-mini
  - anthropic:claude-3-5-sonnet
  ...
+```
+
+### `ruska version`
+
+Show CLI and API version information.
+
+```bash
+$ ruska version
+
+Ruska CLI v0.1.3
+API: https://chat.ruska.ai
+```
+
+### `ruska health`
+
+Check API health status.
+
+```bash
+$ ruska health
+
+API Health Check
+Status: healthy
 ```
 
 ### `ruska --ui`
