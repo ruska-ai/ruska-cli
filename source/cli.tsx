@@ -36,6 +36,9 @@ const cli = meow(
 	  -t, --thread      Thread ID to continue a conversation
 	  -m, --message     Message (alternative to positional arg)
 	  --json            Output as newline-delimited JSON (auto-enabled when piped)
+	  --truncate <n>    Max characters for tool output (default: 500)
+	  --truncate-lines  Max lines for tool output (default: 10)
+	  --full-output     Disable truncation (show full output)
 
 	Create Options
 	  --name            Assistant name (required)
@@ -81,6 +84,18 @@ const cli = meow(
 			thread: {
 				type: 'string',
 				shortFlag: 't',
+			},
+			truncate: {
+				type: 'number',
+				default: 500,
+			},
+			truncateLines: {
+				type: 'number',
+				default: 10,
+			},
+			fullOutput: {
+				type: 'boolean',
+				default: false,
 			},
 			interactive: {
 				type: 'boolean',
@@ -164,6 +179,12 @@ async function main() {
 				json: cli.flags.json,
 				assistantId,
 				threadId,
+				truncateOptions: cli.flags.fullOutput
+					? undefined
+					: {
+							maxLength: cli.flags.truncate,
+							maxLines: cli.flags.truncateLines,
+					  },
 			});
 			break;
 		}
