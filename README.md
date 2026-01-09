@@ -176,10 +176,33 @@ $ ruska chat "Hello" -a <assistant-id> | jq '.type'
 | `-a, --assistant`  | Assistant ID (optional, uses default chat if omitted) |
 | `-t, --thread`     | Thread ID to continue an existing conversation        |
 | `-m, --message`    | Message to send (alternative to positional arg)       |
+| `--tools`          | Tools for the chat session (see below for modes)      |
 | `--json`           | Output as newline-delimited JSON (NDJSON)             |
 | `--truncate <n>`   | Max characters for tool output (default: 500)         |
 | `--truncate-lines` | Max lines for tool output (default: 10)               |
 | `--full-output`    | Disable truncation (show full output)                 |
+
+**Tool options:**
+
+| Value                 | Behavior                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| (not provided)        | Uses default tools: web_search, web_scrape, math_calculator, think_tool, python_sandbox |
+| `--tools=disabled`    | Disables all tools                                                                      |
+| `--tools=tool1,tool2` | Uses only the specified tools                                                           |
+
+**Examples with tools:**
+
+```bash
+# Chat with default tools (web search, scrape, calculator, think, python)
+$ ruska chat "What's the weather in Dallas?"
+
+# Chat without any tools
+$ ruska chat "Tell me a joke" --tools=disabled
+
+# Chat with specific tools only
+$ ruska chat "Calculate 2+2" --tools=math_calculator
+$ ruska chat "Search and analyze" --tools=web_search,think_tool
+```
 
 **Exit codes:**
 

@@ -25,12 +25,14 @@ import {
 	StreamConnectionError,
 } from '../lib/services/stream-service.js';
 import {truncate, type TruncateOptions} from '../lib/output/truncate.js';
+import {parseToolsFlag} from '../lib/tools.js';
 
-type ChatCommandProps = {
+type ChatCommandProperties = {
 	readonly message: string;
 	readonly isJsonMode: boolean;
 	readonly assistantId?: string;
 	readonly threadId?: string;
+	readonly tools?: string[];
 	readonly truncateOptions?: TruncateOptions;
 };
 
@@ -136,8 +138,9 @@ function ChatCommandTui({
 	message,
 	assistantId,
 	threadId,
+	tools,
 	truncateOptions,
-}: Omit<ChatCommandProps, 'isJsonMode'>) {
+}: Omit<ChatCommandProperties, 'isJsonMode'>) {
 	const {exit} = useApp();
 	const [config, setConfig] = useState<Config | undefined>();
 	const [authError, setAuthError] = useState(false);
@@ -163,13 +166,14 @@ function ChatCommandTui({
 			config
 				? {
 						input: {messages: [{role: 'user' as const, content: message}]},
+						tools,
 						metadata: {
 							...(assistantId && {assistant_id: assistantId}),
 							...(threadId && {thread_id: threadId}),
 						},
 				  }
 				: undefined,
-		[config, assistantId, message, threadId],
+		[config, assistantId, message, threadId, tools],
 	);
 	/* eslint-enable @typescript-eslint/naming-convention */
 
@@ -281,6 +285,7 @@ async function runJsonMode(
 	message: string,
 	assistantId?: string,
 	threadId?: string,
+	tools?: string[],
 ): Promise<void> {
 	const config = await loadConfig();
 
@@ -305,6 +310,7 @@ async function runJsonMode(
 		/* eslint-disable @typescript-eslint/naming-convention */
 		const request: StreamRequest = {
 			input: {messages: [{role: 'user', content: message}]},
+			tools,
 			metadata: {
 				...(assistantId && {assistant_id: assistantId}),
 				...(threadId && {thread_id: threadId}),
@@ -373,18 +379,19 @@ function ChatCommand({
 	isJsonMode,
 	assistantId,
 	threadId,
+	tools,
 	truncateOptions,
-}: ChatCommandProps) {
+}: ChatCommandProperties) {
 	const {exit} = useApp();
 
 	useEffect(() => {
 		if (isJsonMode) {
 			// JSON mode runs outside React, just exit immediately
-			void runJsonMode(message, assistantId, threadId).finally(() => {
+			void runJsonMode(message, assistantId, threadId, tools).finally(() => {
 				exit();
 			});
 		}
-	}, [message, isJsonMode, assistantId, threadId, exit]);
+	}, [message, isJsonMode, assistantId, threadId, tools, exit]);
 
 	// JSON mode: no UI (handled in useEffect)
 	if (isJsonMode) {
@@ -397,6 +404,7 @@ function ChatCommand({
 			message={message}
 			assistantId={assistantId}
 			threadId={threadId}
+			tools={tools}
 			truncateOptions={truncateOptions}
 		/>
 	);
@@ -411,11 +419,15 @@ export async function runChatCommand(
 		json?: boolean;
 		assistantId?: string;
 		threadId?: string;
+		tools?: string;
 		truncateOptions?: TruncateOptions;
 	} = {},
 ): Promise<void> {
 	// Auto-detect: use JSON mode if not TTY (piped) or explicitly requested
 	const isJsonMode = options.json ?? !checkIsTty();
+
+	// Parse tools flag (undefined = defaults, 'disabled' = [], 'a,b' = ['a', 'b'])
+	const parsedTools = parseToolsFlag(options.tools);
 
 	const {waitUntilExit} = render(
 		<ChatCommand
@@ -423,6 +435,7 @@ export async function runChatCommand(
 			isJsonMode={isJsonMode}
 			assistantId={options.assistantId}
 			threadId={options.threadId}
+			tools={parsedTools}
 			truncateOptions={options.truncateOptions}
 		/>,
 	);

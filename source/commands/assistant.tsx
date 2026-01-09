@@ -12,11 +12,11 @@ type Status =
 	| 'not-authenticated'
 	| 'not-found';
 
-type AssistantCommandProps = {
+type AssistantCommandProperties = {
 	readonly assistantId: string;
 };
 
-function AssistantCommand({assistantId}: AssistantCommandProps) {
+function AssistantCommand({assistantId}: AssistantCommandProperties) {
 	const {exit} = useApp();
 	const [status, setStatus] = useState<Status>('loading');
 	const [assistant, setAssistant] = useState<Assistant | undefined>(undefined);

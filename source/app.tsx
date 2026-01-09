@@ -9,12 +9,12 @@ function MainLayout({children}: PropsWithChildren) {
 	return <Box>{children}</Box>;
 }
 
-type SideBarProps = {
+type SideBarProperties = {
 	readonly navItems: Array<Item<string>>;
 	readonly onSelect: (item: Item<string>) => void;
 };
 
-function SideBar({navItems, onSelect}: SideBarProps) {
+function SideBar({navItems, onSelect}: SideBarProperties) {
 	return (
 		<Box
 			borderStyle="single"

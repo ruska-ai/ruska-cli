@@ -35,6 +35,9 @@ const cli = meow(
 	  -a, --assistant   Assistant ID (optional, uses default chat if omitted)
 	  -t, --thread      Thread ID to continue a conversation
 	  -m, --message     Message (alternative to positional arg)
+	  --tools           Tools to enable (default: web_search,web_scrape,math_calculator,think_tool,python_sandbox)
+	                    Use --tools=disabled to disable all tools
+	                    Use --tools=tool1,tool2 for specific tools
 	  --json            Output as newline-delimited JSON (auto-enabled when piped)
 	  --truncate <n>    Max characters for tool output (default: 500)
 	  --truncate-lines  Max lines for tool output (default: 10)
@@ -52,7 +55,9 @@ const cli = meow(
 	  $ ruska auth                                    # Configure API key and host
 	  $ ruska assistants                              # List your assistants
 	  $ ruska assistant abc-123                       # Get assistant details
-	  $ ruska chat "Hello"                           # Direct chat with default LLM
+	  $ ruska chat "Hello"                           # Chat with default tools enabled
+	  $ ruska chat "Hello" --tools=disabled          # Chat without any tools
+	  $ ruska chat "Search X" --tools=web_search     # Chat with specific tools
 	  $ ruska chat "Hello" -a <assistant-id>         # Chat with specific assistant
 	  $ ruska chat "Follow up" -t <thread-id>        # Continue existing thread
 	  $ ruska chat "Hello" -a <id> --json            # Output as NDJSON
@@ -121,7 +126,7 @@ const cli = meow(
 	},
 );
 
-const [command, ...args] = cli.input;
+const [command, ...arguments_] = cli.input;
 
 // Route to appropriate command
 async function main() {
@@ -143,7 +148,7 @@ async function main() {
 		}
 
 		case 'assistant': {
-			const assistantId = args[0];
+			const assistantId = arguments_[0];
 			if (!assistantId) {
 				console.error('Usage: ruska assistant <id>');
 				console.log('Run `ruska assistants` to list available assistants');
@@ -167,7 +172,7 @@ async function main() {
 			const threadId =
 				cli.flags.thread ??
 				(cli.flags as Record<string, unknown>)['t']?.toString();
-			const message = args.join(' ') || cli.flags.message;
+			const message = arguments_.join(' ') || cli.flags.message;
 
 			if (!message) {
 				console.error('Error: Message is required');
@@ -179,6 +184,7 @@ async function main() {
 				json: cli.flags.json,
 				assistantId,
 				threadId,
+				tools: cli.flags.tools,
 				truncateOptions: cli.flags.fullOutput
 					? undefined
 					: {

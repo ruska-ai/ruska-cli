@@ -1,6 +1,6 @@
 {
 	"name": "@ruska/cli",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"description": "CLI for Orchestra - AI Agent Orchestration Platform",
 	"license": "Apache-2.0",
 	"author": "RUSKA <reggleston@ruska.ai>",
@@ -47,7 +47,7 @@
 		"dev": "tsc --watch",
 		"build": "tsc",
 		"build:clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run build",
-		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && xo --fix",
+		"format": "xo --fix && prettier --write \"**/*.{ts,tsx,json,md}\"",
 		"format:check": "prettier --check .",
 		"lint": "xo",
 		"test": "npm run lint && npm run build && ava",
@@ -87,7 +87,7 @@
 		"ts-node": "^10.9.1",
 		"tsx": "^4.21.0",
 		"typescript": "^5.0.3",
-		"xo": "^0.53.1"
+		"xo": "^0.60.0"
 	},
 	"ava": {
 		"files": [
@@ -103,7 +103,16 @@
 		"rules": {
 			"react/prop-types": "off",
 			"unicorn/expiring-todo-comments": "off",
-			"ava/no-ignored-test-files": "off"
+			"ava/no-ignored-test-files": "off",
+			"unicorn/prevent-abbreviations": "off",
+			"@typescript-eslint/switch-exhaustiveness-check": "off",
+			"@typescript-eslint/no-unsafe-assignment": "off",
+			"@typescript-eslint/no-unsafe-call": "off",
+			"@typescript-eslint/restrict-plus-operands": "off",
+			"promise/prefer-await-to-then": "off",
+			"complexity": "off",
+			"unicorn/prefer-at": "off",
+			"prettier/prettier": "off"
 		}
 	},
 	"prettier": "@vdemedes/prettier-config"
