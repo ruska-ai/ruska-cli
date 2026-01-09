@@ -171,7 +171,7 @@ function ChatCommandTui({
 							...(assistantId && {assistant_id: assistantId}),
 							...(threadId && {thread_id: threadId}),
 						},
-					}
+				  }
 				: undefined,
 		[config, assistantId, message, threadId, tools],
 	);

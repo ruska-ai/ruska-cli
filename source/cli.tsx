@@ -190,7 +190,7 @@ async function main() {
 					: {
 							maxLength: cli.flags.truncate,
 							maxLines: cli.flags.truncateLines,
-						},
+					  },
 			});
 			break;
 		}

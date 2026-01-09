@@ -47,7 +47,7 @@
 		"dev": "tsc --watch",
 		"build": "tsc",
 		"build:clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run build",
-		"format": "prettier --write \"**/*.{ts,tsx,json,md}\" && xo --fix",
+		"format": "xo --fix && prettier --write \"**/*.{ts,tsx,json,md}\"",
 		"format:check": "prettier --check .",
 		"lint": "xo",
 		"test": "npm run lint && npm run build && ava",
@@ -111,7 +111,8 @@
 			"@typescript-eslint/restrict-plus-operands": "off",
 			"promise/prefer-await-to-then": "off",
 			"complexity": "off",
-			"unicorn/prefer-at": "off"
+			"unicorn/prefer-at": "off",
+			"prettier/prettier": "off"
 		}
 	},
 	"prettier": "@vdemedes/prettier-config"
