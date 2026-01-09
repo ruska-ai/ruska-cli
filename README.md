@@ -184,11 +184,11 @@ $ ruska chat "Hello" -a <assistant-id> | jq '.type'
 
 **Tool options:**
 
-| Value               | Behavior                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| (not provided)      | Uses default tools: web_search, web_scrape, math_calculator, think_tool, python_sandbox |
-| `--tools=disabled`  | Disables all tools                                                       |
-| `--tools=tool1,tool2` | Uses only the specified tools                                          |
+| Value                 | Behavior                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| (not provided)        | Uses default tools: web_search, web_scrape, math_calculator, think_tool, python_sandbox |
+| `--tools=disabled`    | Disables all tools                                                                      |
+| `--tools=tool1,tool2` | Uses only the specified tools                                                           |
 
 **Examples with tools:**
 
