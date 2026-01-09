@@ -50,10 +50,10 @@ export function useStream(
 	>();
 	const [error, setError] = useState<string | undefined>();
 	const [errorCode, setErrorCode] = useState<number | undefined>();
-	const handleRef = useRef<StreamHandle | undefined>();
+	const handleReference = useRef<StreamHandle | undefined>();
 
 	const abort = useCallback(() => {
-		handleRef.current?.abort();
+		handleReference.current?.abort();
 	}, []);
 
 	useEffect(() => {
@@ -72,7 +72,7 @@ export function useStream(
 
 			try {
 				const handle = await service.connect(request);
-				handleRef.current = handle;
+				handleReference.current = handle;
 
 				if (cancelled) {
 					handle.abort();
@@ -138,7 +138,7 @@ export function useStream(
 
 		return () => {
 			cancelled = true;
-			handleRef.current?.abort();
+			handleReference.current?.abort();
 		};
 	}, [config, request]);
 

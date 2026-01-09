@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {Text, Box, useInput} from 'ink';
 
-type ModelSelectProps = {
+type ModelSelectProperties = {
 	readonly models: string[];
 	readonly value: string;
 	readonly onChange: (value: string) => void;
@@ -17,7 +17,7 @@ export function ModelSelect({
 	onChange,
 	onSubmit,
 	onEscape,
-}: ModelSelectProps) {
+}: ModelSelectProperties) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [cursorPosition, setCursorPosition] = useState(value.length);
 
@@ -46,14 +46,14 @@ export function ModelSelect({
 		} else if (key.tab) {
 			// Tab to autocomplete
 			if (filteredModels.length > 0 && filteredModels[selectedIndex]) {
-				onChange(filteredModels[selectedIndex]!);
-				setCursorPosition(filteredModels[selectedIndex]!.length);
+				onChange(filteredModels[selectedIndex]);
+				setCursorPosition(filteredModels[selectedIndex].length);
 			}
 		} else if (key.return) {
 			// Enter to submit
 			const selectedModel =
 				filteredModels.length > 0 && filteredModels[selectedIndex]
-					? filteredModels[selectedIndex]!
+					? filteredModels[selectedIndex]
 					: value;
 			onSubmit(selectedModel);
 		} else if (key.backspace || key.delete) {
@@ -91,8 +91,8 @@ export function ModelSelect({
 			{filteredModels.length > 0 && (
 				<Box flexDirection="column" marginTop={1} marginLeft={2}>
 					{startIndex > 0 && <Text dimColor> ↑ {startIndex} more</Text>}
-					{visibleModels.map((model, idx) => {
-						const actualIndex = startIndex + idx;
+					{visibleModels.map((model, index) => {
+						const actualIndex = startIndex + index;
 						const isSelected = actualIndex === selectedIndex;
 						return (
 							<Box key={model}>

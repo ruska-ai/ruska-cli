@@ -27,7 +27,7 @@ type Step =
 	| 'done'
 	| 'error';
 
-type InteractiveProps = {
+type InteractiveProperties = {
 	readonly initialName?: string;
 	readonly initialModel?: string;
 	readonly initialDescription?: string;
@@ -41,7 +41,7 @@ function InteractiveCreateAssistant({
 	initialDescription = '',
 	initialSystemPrompt = '',
 	initialTools = '',
-}: InteractiveProps) {
+}: InteractiveProperties) {
 	const {exit} = useApp();
 	const [step, setStep] = useState<Step>('check-auth');
 	const [name, setName] = useState(initialName);
@@ -318,7 +318,7 @@ function InteractiveCreateAssistant({
 	);
 }
 
-type NonInteractiveProps = {
+type NonInteractiveProperties = {
 	readonly name: string;
 	readonly model?: string;
 	readonly description?: string;
@@ -332,7 +332,7 @@ function NonInteractiveCreateAssistant({
 	description,
 	systemPrompt,
 	tools,
-}: NonInteractiveProps) {
+}: NonInteractiveProperties) {
 	const {exit} = useApp();
 	const [status, setStatus] = useState<'creating' | 'done' | 'error'>(
 		'creating',

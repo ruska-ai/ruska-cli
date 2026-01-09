@@ -126,7 +126,7 @@ const cli = meow(
 	},
 );
 
-const [command, ...args] = cli.input;
+const [command, ...arguments_] = cli.input;
 
 // Route to appropriate command
 async function main() {
@@ -148,7 +148,7 @@ async function main() {
 		}
 
 		case 'assistant': {
-			const assistantId = args[0];
+			const assistantId = arguments_[0];
 			if (!assistantId) {
 				console.error('Usage: ruska assistant <id>');
 				console.log('Run `ruska assistants` to list available assistants');
@@ -172,7 +172,7 @@ async function main() {
 			const threadId =
 				cli.flags.thread ??
 				(cli.flags as Record<string, unknown>)['t']?.toString();
-			const message = args.join(' ') || cli.flags.message;
+			const message = arguments_.join(' ') || cli.flags.message;
 
 			if (!message) {
 				console.error('Error: Message is required');
@@ -190,7 +190,7 @@ async function main() {
 					: {
 							maxLength: cli.flags.truncate,
 							maxLines: cli.flags.truncateLines,
-					  },
+						},
 			});
 			break;
 		}

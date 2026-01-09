@@ -27,7 +27,7 @@ import {
 import {truncate, type TruncateOptions} from '../lib/output/truncate.js';
 import {parseToolsFlag} from '../lib/tools.js';
 
-type ChatCommandProps = {
+type ChatCommandProperties = {
 	readonly message: string;
 	readonly isJsonMode: boolean;
 	readonly assistantId?: string;
@@ -56,7 +56,7 @@ function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
 		const text = extractContent(message.content);
 		if (!text) continue;
 
-		const currentBlock = blocks[blocks.length - 1];
+		const currentBlock = blocks.at(-1);
 
 		// Check if this message continues the current block (same type + name)
 		if (
@@ -140,7 +140,7 @@ function ChatCommandTui({
 	threadId,
 	tools,
 	truncateOptions,
-}: Omit<ChatCommandProps, 'isJsonMode'>) {
+}: Omit<ChatCommandProperties, 'isJsonMode'>) {
 	const {exit} = useApp();
 	const [config, setConfig] = useState<Config | undefined>();
 	const [authError, setAuthError] = useState(false);
@@ -171,7 +171,7 @@ function ChatCommandTui({
 							...(assistantId && {assistant_id: assistantId}),
 							...(threadId && {thread_id: threadId}),
 						},
-				  }
+					}
 				: undefined,
 		[config, assistantId, message, threadId, tools],
 	);
@@ -381,7 +381,7 @@ function ChatCommand({
 	threadId,
 	tools,
 	truncateOptions,
-}: ChatCommandProps) {
+}: ChatCommandProperties) {
 	const {exit} = useApp();
 
 	useEffect(() => {

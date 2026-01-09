@@ -1,6 +1,6 @@
 {
 	"name": "@ruska/cli",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"description": "CLI for Orchestra - AI Agent Orchestration Platform",
 	"license": "Apache-2.0",
 	"author": "RUSKA <reggleston@ruska.ai>",
@@ -87,7 +87,7 @@
 		"ts-node": "^10.9.1",
 		"tsx": "^4.21.0",
 		"typescript": "^5.0.3",
-		"xo": "^0.53.1"
+		"xo": "^0.60.0"
 	},
 	"ava": {
 		"files": [

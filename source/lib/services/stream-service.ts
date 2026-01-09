@@ -17,7 +17,10 @@ const defaultTimeoutMs = 30_000;
  * Custom error for stream connection failures
  */
 export class StreamConnectionError extends Error {
-	constructor(message: string, public readonly statusCode: number) {
+	constructor(
+		message: string,
+		public readonly statusCode: number,
+	) {
 		super(message);
 		this.name = 'StreamConnectionError';
 	}
