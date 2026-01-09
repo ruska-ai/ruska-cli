@@ -56,7 +56,7 @@ function groupMessagesIntoBlocks(messages: MessagePayload[]): MessageBlock[] {
 		const text = extractContent(message.content);
 		if (!text) continue;
 
-		const currentBlock = blocks.at(-1);
+		const currentBlock = blocks[blocks.length - 1];
 
 		// Check if this message continues the current block (same type + name)
 		if (

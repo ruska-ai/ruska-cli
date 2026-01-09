@@ -103,7 +103,15 @@
 		"rules": {
 			"react/prop-types": "off",
 			"unicorn/expiring-todo-comments": "off",
-			"ava/no-ignored-test-files": "off"
+			"ava/no-ignored-test-files": "off",
+			"unicorn/prevent-abbreviations": "off",
+			"@typescript-eslint/switch-exhaustiveness-check": "off",
+			"@typescript-eslint/no-unsafe-assignment": "off",
+			"@typescript-eslint/no-unsafe-call": "off",
+			"@typescript-eslint/restrict-plus-operands": "off",
+			"promise/prefer-await-to-then": "off",
+			"complexity": "off",
+			"unicorn/prefer-at": "off"
 		}
 	},
 	"prettier": "@vdemedes/prettier-config"
