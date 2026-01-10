@@ -4,7 +4,11 @@
  */
 
 import test from 'ava';
-import type {StreamRequest, StreamEvent} from '../types/stream.js';
+import type {
+	StreamRequest,
+	StreamEvent,
+	MetadataPayload,
+} from '../types/stream.js';
 
 // Helper to create a valid StreamRequest
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -157,4 +161,70 @@ test('parseStreamEvent returns undefined for invalid JSON', t => {
 test('parseStreamEvent returns undefined for empty data', t => {
 	const event = parseStreamEvent('');
 	t.is(event, undefined);
+});
+
+// Metadata event tests
+test('parseStreamEvent parses metadata event correctly', t => {
+	const data =
+		'["metadata", {"thread_id": "thread-123", "assistant_id": "asst-456"}]';
+	const event = parseStreamEvent(data);
+	t.is(event?.type, 'metadata');
+	/* eslint-disable @typescript-eslint/naming-convention */
+	t.deepEqual(event?.payload, {
+		thread_id: 'thread-123',
+		assistant_id: 'asst-456',
+	});
+	/* eslint-enable @typescript-eslint/naming-convention */
+});
+
+test('MetadataPayload has correct structure with thread_id', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const metadata: MetadataPayload = {
+		thread_id: 'thread-abc-123',
+		assistant_id: 'asst-xyz',
+		project_id: 'proj-456',
+	};
+	/* eslint-enable @typescript-eslint/naming-convention */
+
+	t.is(metadata.thread_id, 'thread-abc-123');
+	t.is(metadata.assistant_id, 'asst-xyz');
+	t.is(metadata.project_id, 'proj-456');
+});
+
+test('MetadataPayload allows optional fields', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const metadata: MetadataPayload = {
+		thread_id: 'thread-only',
+	};
+	/* eslint-enable @typescript-eslint/naming-convention */
+
+	t.is(metadata.thread_id, 'thread-only');
+	t.is(metadata.assistant_id, undefined);
+	t.is(metadata.project_id, undefined);
+});
+
+test('MetadataPayload can be empty', t => {
+	const metadata: MetadataPayload = {};
+
+	t.is(metadata.thread_id, undefined);
+	t.is(metadata.assistant_id, undefined);
+	t.is(metadata.project_id, undefined);
+});
+
+/**
+ * Test that thread_id from metadata event can be extracted for display
+ * This validates the pattern used in chat.tsx for displaying thread info
+ */
+test('thread_id extraction pattern from metadata event', t => {
+	const data = '["metadata", {"thread_id": "new-thread-from-server"}]';
+	const event = parseStreamEvent(data);
+
+	t.is(event?.type, 'metadata');
+
+	// Simulate the pattern used in chat.tsx
+	if (event?.type === 'metadata') {
+		const {payload} = event;
+		const threadId = payload.thread_id;
+		t.is(threadId, 'new-thread-from-server');
+	}
 });
