@@ -7,6 +7,7 @@ import {useState, useEffect, useRef, useCallback} from 'react';
 import type {Config} from '../types/index.js';
 import {
 	type MessagePayload,
+	type MetadataPayload,
 	type StreamRequest,
 	type StreamEvent,
 	type StreamHandle,
@@ -29,6 +30,7 @@ export type UseStreamResult = {
 	events: StreamEvent[];
 	messages: MessagePayload[];
 	finalResponse: ValuesPayload | undefined;
+	streamMetadata: MetadataPayload | undefined;
 	error: string | undefined;
 	errorCode: number | undefined;
 	abort: () => void;
@@ -47,6 +49,9 @@ export function useStream(
 	const [messages, setMessages] = useState<MessagePayload[]>([]);
 	const [finalResponse, setFinalResponse] = useState<
 		ValuesPayload | undefined
+	>();
+	const [streamMetadata, setStreamMetadata] = useState<
+		MetadataPayload | undefined
 	>();
 	const [error, setError] = useState<string | undefined>();
 	const [errorCode, setErrorCode] = useState<number | undefined>();
@@ -67,6 +72,7 @@ export function useStream(
 			setEvents([]);
 			setMessages([]);
 			setFinalResponse(undefined);
+			setStreamMetadata(undefined);
 			setError(undefined);
 			setErrorCode(undefined);
 
@@ -101,6 +107,12 @@ export function useStream(
 						case 'values': {
 							// CRITICAL: This is the complete final response
 							setFinalResponse(event.payload);
+							break;
+						}
+
+						case 'metadata': {
+							// Capture stream metadata (thread_id, etc.)
+							setStreamMetadata(event.payload);
 							break;
 						}
 
@@ -147,6 +159,7 @@ export function useStream(
 		events,
 		messages,
 		finalResponse,
+		streamMetadata,
 		error,
 		errorCode,
 		abort,

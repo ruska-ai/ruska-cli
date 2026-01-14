@@ -6,7 +6,7 @@
 /**
  * Stream event types matching backend SSE format
  */
-export type StreamEventType = 'messages' | 'values' | 'error';
+export type StreamEventType = 'messages' | 'values' | 'error' | 'metadata';
 
 /**
  * Content block for multi-modal messages
@@ -65,12 +65,23 @@ export type ErrorPayload = {
 };
 
 /**
+ * Metadata payload from 'metadata' events
+ * Sent at the start of stream with thread/session info
+ */
+export type MetadataPayload = {
+	thread_id?: string;
+	assistant_id?: string;
+	project_id?: string;
+};
+
+/**
  * Discriminated union for stream events
  */
 export type StreamEvent =
 	| {type: 'messages'; payload: MessagePayload[]; metadata?: unknown}
 	| {type: 'values'; payload: ValuesPayload}
-	| {type: 'error'; payload: ErrorPayload};
+	| {type: 'error'; payload: ErrorPayload}
+	| {type: 'metadata'; payload: MetadataPayload};
 
 /**
  * Request body for /llm/stream endpoint

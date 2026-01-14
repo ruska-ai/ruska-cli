@@ -178,7 +178,10 @@ function ChatCommandTui({
 	/* eslint-enable @typescript-eslint/naming-convention */
 
 	// Stream
-	const {status, messages, events, error} = useStream(config, request);
+	const {status, messages, events, streamMetadata, error} = useStream(
+		config,
+		request,
+	);
 
 	// Group messages into blocks by type + name boundaries
 	const messageBlocks = useMemo(
@@ -259,16 +262,15 @@ function ChatCommandTui({
 			{status === 'done' && (
 				<Box marginTop={1} flexDirection="column">
 					<Text color="green">Done</Text>
-					{request?.metadata?.thread_id && (
-						<Text dimColor>Thread: {request.metadata.thread_id}</Text>
-					)}
 					{extractModelFromEvents(events) && (
 						<Text dimColor>Model: {extractModelFromEvents(events)}</Text>
 					)}
-					{request?.metadata?.thread_id && (
+					{streamMetadata?.thread_id && (
+						<Text dimColor>Thread: {streamMetadata.thread_id}</Text>
+					)}
+					{streamMetadata?.thread_id && (
 						<Text dimColor>
-							Continue: ruska chat &quot;message&quot; -t{' '}
-							{request.metadata.thread_id}
+							Continue: ruska chat -t {streamMetadata.thread_id} &quot;message&quot;
 						</Text>
 					)}
 				</Box>
