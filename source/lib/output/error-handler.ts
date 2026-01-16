@@ -4,6 +4,10 @@
  */
 
 import type {ErrorCode} from '../../types/output.js';
+import {
+	DistributedStreamError,
+	MalformedDistributedResponse,
+} from '../services/stream-service.js';
 
 export type ErrorMapping = {
 	code: ErrorCode;
@@ -22,6 +26,8 @@ export const exitCodes = {
 	rateLimited: 3,
 	timeout: 4,
 	serverError: 5,
+	distributedError: 6,
+	distributedTimeout: 7,
 } as const;
 
 /**
@@ -62,6 +68,35 @@ export function classifyError(
 	}
 
 	if (error instanceof Error) {
+		// Handle distributed mode specific errors
+		if (error instanceof DistributedStreamError) {
+			// Check if it's a timeout during distributed streaming
+			if (error.message.includes('timeout') || error.message.includes('aborted')) {
+				return {
+					code: 'DISTRIBUTED_TIMEOUT',
+					message: `Distributed stream timed out during ${error.phase} phase.`,
+					recoverable: true,
+					exitCode: exitCodes.distributedTimeout,
+				};
+			}
+
+			return {
+				code: 'DISTRIBUTED_ERROR',
+				message: `Distributed stream error (${error.phase}): ${error.message}`,
+				recoverable: error.phase === 'handshake',
+				exitCode: exitCodes.distributedError,
+			};
+		}
+
+		if (error instanceof MalformedDistributedResponse) {
+			return {
+				code: 'DISTRIBUTED_ERROR',
+				message: `Invalid distributed response: ${error.message}`,
+				recoverable: false,
+				exitCode: exitCodes.distributedError,
+			};
+		}
+
 		const errorMessage = error.message.toLowerCase();
 
 		// Network errors

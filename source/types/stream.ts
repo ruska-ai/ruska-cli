@@ -6,7 +6,68 @@
 /**
  * Stream event types matching backend SSE format
  */
-export type StreamEventType = 'messages' | 'values' | 'error' | 'metadata';
+export type StreamEventType = 'messages' | 'values' | 'error' | 'metadata' | 'done';
+
+/**
+ * Special SSE markers from distributed stream
+ */
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const STREAM_DONE_MARKER = '[DONE]';
+
+/**
+ * Response from POST /llm/stream when DISTRIBUTED_WORKERS=true
+ */
+export type DistributedResponse = {
+	thread_id: string;
+	distributed: true;
+};
+
+/**
+ * Type guard for distributed response with strict validation
+ * Validates thread_id exists, is non-empty, and within bounds
+ */
+export function isDistributedResponse(data: unknown): data is DistributedResponse {
+	if (typeof data !== 'object' || data === null) {
+		return false;
+	}
+
+	const obj = data as Record<string, unknown>;
+
+	if (obj['distributed'] !== true) {
+		return false;
+	}
+
+	const threadId = obj['thread_id'];
+	if (typeof threadId !== 'string') {
+		return false;
+	}
+
+	// Strict validation: non-empty and bounded length (prevent DoS)
+	if (threadId.length === 0 || threadId.length > 256) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Error response format from distributed stream
+ */
+export type DistributedErrorResponse = {
+	error: string;
+};
+
+/**
+ * Type guard for distributed error format
+ */
+export function isDistributedError(data: unknown): data is DistributedErrorResponse {
+	if (typeof data !== 'object' || data === null) {
+		return false;
+	}
+
+	const obj = data as Record<string, unknown>;
+	return typeof obj['error'] === 'string';
+}
 
 /**
  * Content block for multi-modal messages
@@ -81,7 +142,8 @@ export type StreamEvent =
 	| {type: 'messages'; payload: MessagePayload[]; metadata?: unknown}
 	| {type: 'values'; payload: ValuesPayload}
 	| {type: 'error'; payload: ErrorPayload}
-	| {type: 'metadata'; payload: MetadataPayload};
+	| {type: 'metadata'; payload: MetadataPayload}
+	| {type: 'done'; payload: undefined};
 
 /**
  * Request body for /llm/stream endpoint

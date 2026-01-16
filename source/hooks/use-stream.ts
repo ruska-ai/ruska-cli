@@ -16,6 +16,8 @@ import {
 import {
 	StreamService,
 	StreamConnectionError,
+	DistributedStreamError,
+	MalformedDistributedResponse,
 } from '../lib/services/stream-service.js';
 
 export type StreamStatus =
@@ -122,6 +124,12 @@ export function useStream(
 							return;
 						}
 
+						case 'done': {
+							// Terminal event from distributed mode
+							// Stream will end naturally after this
+							break;
+						}
+
 						default: {
 							// Unknown event type - ignore
 							break;
@@ -135,6 +143,10 @@ export function useStream(
 					if (error_ instanceof StreamConnectionError) {
 						setError(error_.message);
 						setErrorCode(error_.statusCode);
+					} else if (error_ instanceof DistributedStreamError) {
+						setError(`Distributed error (${error_.phase}): ${error_.message}`);
+					} else if (error_ instanceof MalformedDistributedResponse) {
+						setError(`Invalid distributed response: ${error_.message}`);
 					} else if (error_ instanceof Error) {
 						setError(error_.message);
 					} else {
