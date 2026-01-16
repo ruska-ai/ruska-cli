@@ -270,7 +270,8 @@ function ChatCommandTui({
 					)}
 					{streamMetadata?.thread_id && (
 						<Text dimColor>
-							Continue: ruska chat -t {streamMetadata.thread_id} &quot;message&quot;
+							Continue: ruska chat -t {streamMetadata.thread_id}{' '}
+							&quot;message&quot;
 						</Text>
 					)}
 				</Box>

@@ -51,7 +51,9 @@ export type ErrorCode =
 	| 'STREAM_INTERRUPTED'
 	| 'PARSE_ERROR'
 	| 'SERVER_ERROR'
-	| 'TIMEOUT';
+	| 'TIMEOUT'
+	| 'DISTRIBUTED_ERROR'
+	| 'DISTRIBUTED_TIMEOUT';
 
 /**
  * Union of all output types

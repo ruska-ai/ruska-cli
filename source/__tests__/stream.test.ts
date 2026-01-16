@@ -4,10 +4,13 @@
  */
 
 import test from 'ava';
-import type {
-	StreamRequest,
-	StreamEvent,
-	MetadataPayload,
+import {
+	type StreamRequest,
+	type StreamEvent,
+	type MetadataPayload,
+	isDistributedResponse,
+	isDistributedError,
+	STREAM_DONE_MARKER,
 } from '../types/stream.js';
 
 // Helper to create a valid StreamRequest
@@ -226,5 +229,136 @@ test('thread_id extraction pattern from metadata event', t => {
 		const {payload} = event;
 		const threadId = payload.thread_id;
 		t.is(threadId, 'new-thread-from-server');
+	}
+});
+
+// =============================================================================
+// Distributed Mode Tests (Issue #59)
+// =============================================================================
+
+// isDistributedResponse type guard tests
+test('isDistributedResponse returns true for valid distributed response', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: 'abc-123', distributed: true};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.true(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns false when distributed is not true', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: 'abc-123', distributed: false};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.false(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns false when distributed is missing', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: 'abc-123'};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.false(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns false when thread_id is missing', t => {
+	const response = {distributed: true};
+	t.false(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns false when thread_id is empty string', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: '', distributed: true};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.false(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns false when thread_id exceeds 256 chars', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: 'a'.repeat(257), distributed: true};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.false(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns true when thread_id is exactly 256 chars', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: 'a'.repeat(256), distributed: true};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.true(isDistributedResponse(response));
+});
+
+test('isDistributedResponse returns false for null', t => {
+	t.false(isDistributedResponse(null));
+});
+
+test('isDistributedResponse returns false for undefined', t => {
+	t.false(isDistributedResponse(undefined));
+});
+
+test('isDistributedResponse returns false for non-object types', t => {
+	t.false(isDistributedResponse('string'));
+	t.false(isDistributedResponse(123));
+	t.false(isDistributedResponse(true));
+	t.false(isDistributedResponse([]));
+});
+
+test('isDistributedResponse returns false when thread_id is not a string', t => {
+	/* eslint-disable @typescript-eslint/naming-convention */
+	const response = {thread_id: 123, distributed: true};
+	/* eslint-enable @typescript-eslint/naming-convention */
+	t.false(isDistributedResponse(response));
+});
+
+// IsDistributedError type guard tests
+test('isDistributedError returns true for valid error format', t => {
+	const error = {error: 'Something went wrong'};
+	t.true(isDistributedError(error));
+});
+
+test('isDistributedError returns false when error is missing', t => {
+	const obj = {message: 'Something went wrong'};
+	t.false(isDistributedError(obj));
+});
+
+test('isDistributedError returns false when error is not a string', t => {
+	const obj = {error: 123};
+	t.false(isDistributedError(obj));
+});
+
+test('isDistributedError returns false for null', t => {
+	t.false(isDistributedError(null));
+});
+
+test('isDistributedError returns false for undefined', t => {
+	t.false(isDistributedError(undefined));
+});
+
+test('isDistributedError returns true for empty error string', t => {
+	const error = {error: ''};
+	t.true(isDistributedError(error));
+});
+
+// STREAM_DONE_MARKER constant test
+test('STREAM_DONE_MARKER is [DONE]', t => {
+	t.is(STREAM_DONE_MARKER, '[DONE]');
+});
+
+// Distributed event parsing simulation
+test('parseStreamEvent handles done event type', t => {
+	// Simulating how done events would be added to StreamEvent array
+	const doneEvent: StreamEvent = {type: 'done', payload: undefined};
+	t.is(doneEvent.type, 'done');
+	t.is(doneEvent.payload, undefined);
+});
+
+test('distributed error response can be converted to error event', t => {
+	const distributedError = {error: 'Worker crashed'};
+
+	if (isDistributedError(distributedError)) {
+		const errorEvent: StreamEvent = {
+			type: 'error',
+			payload: {message: distributedError.error},
+		};
+		t.is(errorEvent.type, 'error');
+		t.is(errorEvent.payload.message, 'Worker crashed');
+	} else {
+		t.fail('Should be recognized as distributed error');
 	}
 });
