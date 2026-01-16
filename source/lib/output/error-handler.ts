@@ -71,7 +71,10 @@ export function classifyError(
 		// Handle distributed mode specific errors
 		if (error instanceof DistributedStreamError) {
 			// Check if it's a timeout during distributed streaming
-			if (error.message.includes('timeout') || error.message.includes('aborted')) {
+			if (
+				error.message.includes('timeout') ||
+				error.message.includes('aborted')
+			) {
 				return {
 					code: 'DISTRIBUTED_TIMEOUT',
 					message: `Distributed stream timed out during ${error.phase} phase.`,

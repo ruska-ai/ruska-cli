@@ -6,7 +6,12 @@
 /**
  * Stream event types matching backend SSE format
  */
-export type StreamEventType = 'messages' | 'values' | 'error' | 'metadata' | 'done';
+export type StreamEventType =
+	| 'messages'
+	| 'values'
+	| 'error'
+	| 'metadata'
+	| 'done';
 
 /**
  * Special SSE markers from distributed stream
@@ -26,7 +31,9 @@ export type DistributedResponse = {
  * Type guard for distributed response with strict validation
  * Validates thread_id exists, is non-empty, and within bounds
  */
-export function isDistributedResponse(data: unknown): data is DistributedResponse {
+export function isDistributedResponse(
+	data: unknown,
+): data is DistributedResponse {
 	if (typeof data !== 'object' || data === null) {
 		return false;
 	}
@@ -60,7 +67,9 @@ export type DistributedErrorResponse = {
 /**
  * Type guard for distributed error format
  */
-export function isDistributedError(data: unknown): data is DistributedErrorResponse {
+export function isDistributedError(
+	data: unknown,
+): data is DistributedErrorResponse {
 	if (typeof data !== 'object' || data === null) {
 		return false;
 	}
