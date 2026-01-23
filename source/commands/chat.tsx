@@ -516,9 +516,7 @@ function ChatCommandTui({
 					{extractModelFromEvents(events) && (
 						<Text dimColor>Model: {extractModelFromEvents(events)}</Text>
 					)}
-					{displayThreadId && (
-						<Text dimColor>Thread: {displayThreadId}</Text>
-					)}
+					{displayThreadId && <Text dimColor>Thread: {displayThreadId}</Text>}
 					{displayThreadId && (
 						<Text dimColor>
 							Continue: ruska chat -t {displayThreadId} &quot;message&quot;
