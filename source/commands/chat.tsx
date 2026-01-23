@@ -25,7 +25,20 @@ import {
 	StreamConnectionError,
 } from '../lib/services/stream-service.js';
 import {truncate, type TruncateOptions} from '../lib/output/truncate.js';
-import {parseToolsFlag} from '../lib/tools.js';
+import {parseToolsFlag, buildToolsArray, isLocalTool} from '../lib/tools.js';
+import {useBashConsent} from '../hooks/use-bash-consent.js';
+import {
+	BashConsentPrompt,
+	BashBlockedPrompt,
+	BashResultDisplay,
+} from '../components/bash-consent-prompt.js';
+import {
+	executeBash,
+	formatResultForLlm,
+	formatDeniedResult,
+	defaultTimeoutMs,
+	type BashToolResult,
+} from '../lib/local-tools/index.js';
 
 type ChatCommandProperties = {
 	readonly message: string;
@@ -34,6 +47,9 @@ type ChatCommandProperties = {
 	readonly threadId?: string;
 	readonly tools?: string[];
 	readonly truncateOptions?: TruncateOptions;
+	readonly isBashEnabled?: boolean;
+	readonly isAutoApprove?: boolean;
+	readonly bashTimeout?: number;
 };
 
 /**
@@ -140,10 +156,41 @@ function ChatCommandTui({
 	threadId,
 	tools,
 	truncateOptions,
+	isBashEnabled = false,
+	isAutoApprove = false,
+	bashTimeout = defaultTimeoutMs,
 }: Omit<ChatCommandProperties, 'isJsonMode'>) {
 	const {exit} = useApp();
 	const [config, setConfig] = useState<Config | undefined>();
 	const [authError, setAuthError] = useState(false);
+
+	// Bash consent state
+	const bashConsent = useBashConsent();
+
+	// Track pending bash tool call
+	const [pendingBashCall, setPendingBashCall] = useState<
+		{id: string; command: string} | undefined
+	>(undefined);
+
+	// Track bash execution results for display
+	const [bashResults, setBashResults] = useState<
+		Array<{command: string; result: BashToolResult}>
+	>([]);
+
+	// Track processed tool call IDs to avoid re-processing
+	const [processedToolCalls, setProcessedToolCalls] = useState<Set<string>>(
+		new Set(),
+	);
+
+	// Track conversation continuation request
+	const [continuationRequest, setContinuationRequest] = useState<
+		StreamRequest | undefined
+	>();
+
+	// Preserve thread ID across continuations (streamMetadata resets on new requests)
+	const [preservedThreadId, setPreservedThreadId] = useState<
+		string | undefined
+	>();
 
 	// Load config on mount
 	useEffect(() => {
@@ -159,9 +206,9 @@ function ChatCommandTui({
 		});
 	}, [exit]);
 
-	// Build request (snake_case properties match backend API)
+	// Build initial request (snake_case properties match backend API)
 	/* eslint-disable @typescript-eslint/naming-convention */
-	const request = useMemo<StreamRequest | undefined>(
+	const initialRequest = useMemo<StreamRequest | undefined>(
 		() =>
 			config
 				? {
@@ -177,11 +224,146 @@ function ChatCommandTui({
 	);
 	/* eslint-enable @typescript-eslint/naming-convention */
 
+	// Use continuation request if available, otherwise initial request
+	const activeRequest = continuationRequest ?? initialRequest;
+
 	// Stream
-	const {status, messages, events, streamMetadata, error} = useStream(
-		config,
-		request,
-	);
+	const {status, messages, events, streamMetadata, finalResponse, error} =
+		useStream(config, activeRequest);
+
+	// Preserve thread ID when we get it (survives across continuation resets)
+	useEffect(() => {
+		if (streamMetadata?.thread_id) {
+			setPreservedThreadId(streamMetadata.thread_id);
+		}
+	}, [streamMetadata?.thread_id]);
+
+	// Use preserved thread ID or current streamMetadata
+	const displayThreadId = preservedThreadId ?? streamMetadata?.thread_id;
+
+	// Detect bash_tool calls from finalResponse (complete tool_calls with full args)
+	useEffect(() => {
+		if (!isBashEnabled) return;
+		if (!finalResponse) return; // Wait for final response
+		if (pendingBashCall) return; // Already handling a call
+		if (bashConsent.isPending) return; // Waiting for consent
+
+		// Look for tool_calls in the final response messages
+		for (const msg of finalResponse.messages) {
+			const toolCalls = msg['tool_calls'] as
+				| Array<{id: string; name: string; args: Record<string, unknown>}>
+				| undefined;
+			if (!toolCalls) continue;
+
+			for (const toolCall of toolCalls) {
+				// Skip already processed or non-local tool calls
+				if (processedToolCalls.has(toolCall.id)) continue;
+				if (!isLocalTool(toolCall.name)) continue;
+
+				const command = String(toolCall.args?.['command'] ?? '');
+				if (!command) continue;
+
+				// Mark as being processed and trigger consent flow
+				setProcessedToolCalls(prev => new Set([...prev, toolCall.id]));
+				setPendingBashCall({id: toolCall.id, command});
+				bashConsent.requestConsent(command, toolCall.id);
+				return;
+			}
+		}
+	}, [
+		finalResponse,
+		isBashEnabled,
+		pendingBashCall,
+		bashConsent,
+		processedToolCalls,
+	]);
+
+	// Handle bash consent decisions
+	useEffect(() => {
+		if (!pendingBashCall) return;
+
+		// Handle blocked commands
+		if (bashConsent.state.type === 'blocked') {
+			// Command was auto-blocked, continue conversation with denied result
+			const deniedResult = formatDeniedResult(
+				bashConsent.state.command,
+				bashConsent.state.reason,
+			);
+			continueConversation(bashConsent.state.toolCallId, deniedResult);
+			setPendingBashCall(undefined);
+			bashConsent.reset();
+			return;
+		}
+
+		// Handle user decision
+		if (bashConsent.state.type === 'decided') {
+			if (bashConsent.state.response === 'approved') {
+				// Execute the command
+				void executeBashCommand(
+					bashConsent.state.command,
+					bashConsent.state.toolCallId,
+				);
+			} else {
+				// User denied, continue conversation with denied result
+				const deniedResult = formatDeniedResult(
+					bashConsent.state.command,
+					bashConsent.state.reason ?? 'User denied execution',
+				);
+				continueConversation(bashConsent.state.toolCallId, deniedResult);
+			}
+
+			setPendingBashCall(undefined);
+			bashConsent.reset();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [bashConsent.state, pendingBashCall]);
+
+	// Auto-approve if enabled
+	useEffect(() => {
+		if (isAutoApprove && bashConsent.state.type === 'pending') {
+			bashConsent.approve();
+		}
+	}, [isAutoApprove, bashConsent]);
+
+	async function executeBashCommand(command: string, toolCallId: string) {
+		const result = await executeBash({
+			command,
+			timeout: bashTimeout,
+		});
+
+		// Store result for display
+		setBashResults(prev => [...prev, {command, result}]);
+
+		// Continue conversation with result
+		const formattedResult = formatResultForLlm(result);
+		continueConversation(toolCallId, formattedResult);
+	}
+
+	function continueConversation(toolCallId: string, resultContent: string) {
+		if (!streamMetadata?.thread_id || !config) return;
+
+		// Build continuation request with tool result
+		/* eslint-disable @typescript-eslint/naming-convention */
+		const continuation: StreamRequest = {
+			input: {
+				messages: [
+					{
+						role: 'tool' as const,
+						tool_call_id: toolCallId,
+						content: resultContent,
+					},
+				],
+			},
+			tools,
+			metadata: {
+				...(assistantId && {assistant_id: assistantId}),
+				thread_id: streamMetadata.thread_id,
+			},
+		};
+		/* eslint-enable @typescript-eslint/naming-convention */
+
+		setContinuationRequest(continuation);
+	}
 
 	// Group messages into blocks by type + name boundaries
 	const messageBlocks = useMemo(
@@ -189,14 +371,46 @@ function ChatCommandTui({
 		[messages],
 	);
 
-	// Exit on completion
+	// Check if there are any unprocessed local tool calls in finalResponse
+	const hasUnprocessedToolCalls = useMemo(() => {
+		if (!isBashEnabled) return false;
+		if (!finalResponse) return false;
+
+		for (const msg of finalResponse.messages) {
+			const toolCalls = msg['tool_calls'] as
+				| Array<{id: string; name: string; args: Record<string, unknown>}>
+				| undefined;
+			if (!toolCalls) continue;
+
+			for (const toolCall of toolCalls) {
+				if (processedToolCalls.has(toolCall.id)) continue;
+				if (isLocalTool(toolCall.name)) return true;
+			}
+		}
+
+		return false;
+	}, [finalResponse, isBashEnabled, processedToolCalls]);
+
+	// Exit on completion (only if not waiting for consent or executing bash)
 	useEffect(() => {
 		if (status === 'done' || status === 'error') {
+			// Don't exit if we're handling a bash tool call or have unprocessed ones
+			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+			if (pendingBashCall || bashConsent.isPending || hasUnprocessedToolCalls) {
+				return;
+			}
+
 			setTimeout(() => {
 				exit();
 			}, 100);
 		}
-	}, [status, exit]);
+	}, [
+		status,
+		exit,
+		pendingBashCall,
+		bashConsent.isPending,
+		hasUnprocessedToolCalls,
+	]);
 
 	// Auth error
 	if (authError) {
@@ -258,20 +472,54 @@ function ChatCommandTui({
 				</Box>
 			))}
 
+			{/* Bash execution results */}
+			{bashResults.map(bashResult => (
+				<Box key={`bash-result-${bashResult.command}`} marginTop={1}>
+					<BashResultDisplay
+						command={bashResult.command}
+						exitCode={bashResult.result.exitCode}
+						stdout={bashResult.result.stdout}
+						stderr={bashResult.result.stderr}
+						isTimedOut={bashResult.result.timedOut}
+						executionTimeMs={bashResult.result.executionTimeMs}
+					/>
+				</Box>
+			))}
+
+			{/* Bash consent prompt - only show when not auto-approving */}
+			{bashConsent.state.type === 'pending' && !isAutoApprove && (
+				<Box marginTop={1}>
+					<BashConsentPrompt
+						command={bashConsent.state.command}
+						risk={bashConsent.state.risk}
+						warnings={bashConsent.state.warnings}
+						onApprove={bashConsent.approve}
+						onDeny={bashConsent.deny}
+					/>
+				</Box>
+			)}
+
+			{/* Bash blocked notification */}
+			{bashConsent.state.type === 'blocked' && (
+				<Box marginTop={1}>
+					<BashBlockedPrompt
+						command={bashConsent.state.command}
+						reason={bashConsent.state.reason}
+					/>
+				</Box>
+			)}
+
 			{/* Done indicator */}
-			{status === 'done' && (
+			{status === 'done' && !pendingBashCall && !bashConsent.isPending && (
 				<Box marginTop={1} flexDirection="column">
 					<Text color="green">Done</Text>
 					{extractModelFromEvents(events) && (
 						<Text dimColor>Model: {extractModelFromEvents(events)}</Text>
 					)}
-					{streamMetadata?.thread_id && (
-						<Text dimColor>Thread: {streamMetadata.thread_id}</Text>
-					)}
-					{streamMetadata?.thread_id && (
+					{displayThreadId && <Text dimColor>Thread: {displayThreadId}</Text>}
+					{displayThreadId && (
 						<Text dimColor>
-							Continue: ruska chat -t {streamMetadata.thread_id}{' '}
-							&quot;message&quot;
+							Continue: ruska chat -t {displayThreadId} &quot;message&quot;
 						</Text>
 					)}
 				</Box>
@@ -384,6 +632,9 @@ function ChatCommand({
 	threadId,
 	tools,
 	truncateOptions,
+	isBashEnabled,
+	isAutoApprove,
+	bashTimeout,
 }: ChatCommandProperties) {
 	const {exit} = useApp();
 
@@ -409,6 +660,9 @@ function ChatCommand({
 			threadId={threadId}
 			tools={tools}
 			truncateOptions={truncateOptions}
+			isBashEnabled={isBashEnabled}
+			isAutoApprove={isAutoApprove}
+			bashTimeout={bashTimeout}
 		/>
 	);
 }
@@ -424,6 +678,9 @@ export async function runChatCommand(
 		threadId?: string;
 		tools?: string;
 		truncateOptions?: TruncateOptions;
+		enableBash?: boolean;
+		autoApprove?: boolean;
+		bashTimeout?: number;
 	} = {},
 ): Promise<void> {
 	// Auto-detect: use JSON mode if not TTY (piped) or explicitly requested
@@ -432,14 +689,20 @@ export async function runChatCommand(
 	// Parse tools flag (undefined = defaults, 'disabled' = [], 'a,b' = ['a', 'b'])
 	const parsedTools = parseToolsFlag(options.tools);
 
+	// Build tools array with bash_tool if enabled
+	const tools = buildToolsArray(options.enableBash ?? false, parsedTools);
+
 	const {waitUntilExit} = render(
 		<ChatCommand
 			message={message}
 			isJsonMode={isJsonMode}
 			assistantId={options.assistantId}
 			threadId={options.threadId}
-			tools={parsedTools}
+			tools={tools}
 			truncateOptions={options.truncateOptions}
+			isBashEnabled={options.enableBash}
+			isAutoApprove={options.autoApprove}
+			bashTimeout={options.bashTimeout}
 		/>,
 	);
 	await waitUntilExit();

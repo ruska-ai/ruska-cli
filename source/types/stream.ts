@@ -155,12 +155,29 @@ export type StreamEvent =
 	| {type: 'done'; payload: undefined};
 
 /**
+ * Tool result message for continuing conversation after local tool execution
+ * Follows Anthropic's tool_result format
+ */
+export type ToolResultMessage = {
+	role: 'tool';
+	tool_call_id: string;
+	content: string;
+};
+
+/**
+ * Message types that can be sent in a stream request
+ */
+export type StreamMessage =
+	| {role: 'user' | 'assistant' | 'system'; content: string}
+	| ToolResultMessage;
+
+/**
  * Request body for /llm/stream endpoint
  * @see backend/src/schemas/entities/llm.py:LLMRequest
  */
 export type StreamRequest = {
 	input: {
-		messages: Array<{role: 'user' | 'assistant' | 'system'; content: string}>;
+		messages: StreamMessage[];
 		files?: Record<string, unknown>;
 	};
 	model?: string;
