@@ -42,6 +42,9 @@ const cli = meow(
 	  --truncate <n>    Max characters for tool output (default: 500)
 	  --truncate-lines  Max lines for tool output (default: 10)
 	  --full-output     Disable truncation (show full output)
+	  --bash            Enable local bash command execution (SECURITY: commands run on YOUR machine)
+	  --auto-approve    DANGEROUS: Auto-approve bash commands without confirmation
+	  --bash-timeout    Timeout for bash commands in ms (default: 30000)
 
 	Create Options
 	  --name            Assistant name (required)
@@ -122,6 +125,18 @@ const cli = meow(
 			tools: {
 				type: 'string',
 			},
+			bash: {
+				type: 'boolean',
+				default: false,
+			},
+			autoApprove: {
+				type: 'boolean',
+				default: false,
+			},
+			bashTimeout: {
+				type: 'number',
+				default: 30_000,
+			},
 		},
 	},
 );
@@ -191,6 +206,9 @@ async function main() {
 							maxLength: cli.flags.truncate,
 							maxLines: cli.flags.truncateLines,
 					  },
+				enableBash: cli.flags.bash,
+				autoApprove: cli.flags.autoApprove,
+				bashTimeout: cli.flags.bashTimeout,
 			});
 			break;
 		}
