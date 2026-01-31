@@ -55,7 +55,7 @@
 		"prepack": "npm run build:clean",
 		"prepublishOnly": "npm run test && npm run build:clean",
 		"version": "npm run format && git add -A",
-		"link": "npm install && npm run build && npm link",
+		"link": "rm -rf dist && npm install && npm run build && npm link",
 		"package:local": "npm run build:clean && npm pack"
 	},
 	"publishConfig": {

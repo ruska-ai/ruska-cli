@@ -26,6 +26,7 @@ import {
 } from '../lib/services/stream-service.js';
 import {truncate, type TruncateOptions} from '../lib/output/truncate.js';
 import {parseToolsFlag, buildToolsArray, isLocalTool} from '../lib/tools.js';
+import {fetchModels} from '../lib/api.js';
 import {useBashConsent} from '../hooks/use-bash-consent.js';
 import {
 	BashConsentPrompt,
@@ -43,6 +44,7 @@ import {
 type ChatCommandProperties = {
 	readonly message: string;
 	readonly isJsonMode: boolean;
+	readonly model?: string;
 	readonly assistantId?: string;
 	readonly threadId?: string;
 	readonly tools?: string[];
@@ -152,6 +154,7 @@ function StatusIndicator({status}: {readonly status: StreamStatus}) {
  */
 function ChatCommandTui({
 	message,
+	model,
 	assistantId,
 	threadId,
 	tools,
@@ -213,6 +216,7 @@ function ChatCommandTui({
 			config
 				? {
 						input: {messages: [{role: 'user' as const, content: message}]},
+						...(model && {model}),
 						tools,
 						metadata: {
 							...(assistantId && {assistant_id: assistantId}),
@@ -220,7 +224,7 @@ function ChatCommandTui({
 						},
 				  }
 				: undefined,
-		[config, assistantId, message, threadId, tools],
+		[config, assistantId, message, model, threadId, tools],
 	);
 	/* eslint-enable @typescript-eslint/naming-convention */
 
@@ -528,16 +532,20 @@ function ChatCommandTui({
 	);
 }
 
+type JsonModeOptions = {
+	message: string;
+	model?: string;
+	assistantId?: string;
+	threadId?: string;
+	tools?: string[];
+};
+
 /**
  * JSON mode chat command - direct streaming without React hooks
  * Outputs NDJSON for downstream consumption
  */
-async function runJsonMode(
-	message: string,
-	assistantId?: string,
-	threadId?: string,
-	tools?: string[],
-): Promise<void> {
+async function runJsonMode(options: JsonModeOptions): Promise<void> {
+	const {message, model, assistantId, threadId, tools} = options;
 	const config = await loadConfig();
 
 	if (!config) {
@@ -561,6 +569,7 @@ async function runJsonMode(
 		/* eslint-disable @typescript-eslint/naming-convention */
 		const request: StreamRequest = {
 			input: {messages: [{role: 'user', content: message}]},
+			...(model && {model}),
 			tools,
 			metadata: {
 				...(assistantId && {assistant_id: assistantId}),
@@ -628,6 +637,7 @@ async function runJsonMode(
 function ChatCommand({
 	message,
 	isJsonMode,
+	model,
 	assistantId,
 	threadId,
 	tools,
@@ -641,11 +651,13 @@ function ChatCommand({
 	useEffect(() => {
 		if (isJsonMode) {
 			// JSON mode runs outside React, just exit immediately
-			void runJsonMode(message, assistantId, threadId, tools).finally(() => {
-				exit();
-			});
+			void runJsonMode({message, model, assistantId, threadId, tools}).finally(
+				() => {
+					exit();
+				},
+			);
 		}
-	}, [message, isJsonMode, assistantId, threadId, tools, exit]);
+	}, [message, isJsonMode, model, assistantId, threadId, tools, exit]);
 
 	// JSON mode: no UI (handled in useEffect)
 	if (isJsonMode) {
@@ -656,6 +668,7 @@ function ChatCommand({
 	return (
 		<ChatCommandTui
 			message={message}
+			model={model}
 			assistantId={assistantId}
 			threadId={threadId}
 			tools={tools}
@@ -674,6 +687,7 @@ export async function runChatCommand(
 	message: string,
 	options: {
 		json?: boolean;
+		model?: string;
 		assistantId?: string;
 		threadId?: string;
 		tools?: string;
@@ -692,10 +706,23 @@ export async function runChatCommand(
 	// Build tools array with bash_tool if enabled
 	const tools = buildToolsArray(options.enableBash ?? false, parsedTools);
 
+	// Resolve model: use provided model or fetch user's default
+	let {model} = options;
+	if (!model) {
+		const config = await loadConfig();
+		if (config) {
+			const modelsResult = await fetchModels(config.host, config.apiKey);
+			if (modelsResult.success && modelsResult.data) {
+				model = modelsResult.data.default;
+			}
+		}
+	}
+
 	const {waitUntilExit} = render(
 		<ChatCommand
 			message={message}
 			isJsonMode={isJsonMode}
+			model={model}
 			assistantId={options.assistantId}
 			threadId={options.threadId}
 			tools={tools}

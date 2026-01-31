@@ -12,6 +12,7 @@ import {runCreateAssistantCommand} from './commands/create-assistant.js';
 import {runChatCommand} from './commands/chat.js';
 import {runVersionCommand} from './commands/version.js';
 import {runHealthCommand} from './commands/health.js';
+import {runUserCommand} from './commands/user.js';
 
 const cli = meow(
 	`
@@ -20,6 +21,7 @@ const cli = meow(
 
 	Commands
 	  auth              Configure API authentication
+	  user              Show current user info
 	  assistants        List your assistants
 	  assistant <id>    Get assistant by ID
 	  chat <message>    Chat with the LLM (optionally with an assistant)
@@ -35,6 +37,7 @@ const cli = meow(
 	  -a, --assistant   Assistant ID (optional, uses default chat if omitted)
 	  -t, --thread      Thread ID to continue a conversation
 	  -m, --message     Message (alternative to positional arg)
+	  --model           Model to use (default: your configured default model)
 	  --tools           Tools to enable (default: web_search,web_scrape,math_calculator,think_tool,python_sandbox)
 	                    Use --tools=disabled to disable all tools
 	                    Use --tools=tool1,tool2 for specific tools
@@ -157,6 +160,12 @@ async function main() {
 			break;
 		}
 
+		case 'user':
+		case 'whoami': {
+			await runUserCommand();
+			break;
+		}
+
 		case 'assistants': {
 			await runAssistantsCommand();
 			break;
@@ -197,6 +206,7 @@ async function main() {
 
 			await runChatCommand(message, {
 				json: cli.flags.json,
+				model: cli.flags.model,
 				assistantId,
 				threadId,
 				tools: cli.flags.tools,
