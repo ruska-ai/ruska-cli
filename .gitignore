@@ -20,3 +20,5 @@ progress.txt
 **/node_modules
 **/dist
 **/.wortrees
+**/.worktrees
+.worktrees/
