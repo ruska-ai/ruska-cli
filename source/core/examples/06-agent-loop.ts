@@ -7,7 +7,11 @@
  * Run: npx tsx source/core/examples/06-agent-loop.ts
  */
 
-import {type CoreMessage, type ModelResult, type ToolDefinition} from '../schemas.js';
+import {
+	type CoreMessage,
+	type ModelResult,
+	type ToolDefinition,
+} from '../schemas.js';
 import {type ModelInterface} from '../model.js';
 import {createToolRegistry, defineTool} from '../tool.js';
 import {createMiddlewareStack, type Middleware} from '../middleware.js';
@@ -32,9 +36,7 @@ function createMockModel(): ModelInterface {
 				// First turn: call the get_time tool
 				return {
 					content: 'Let me check the time for you.',
-					toolCalls: [
-						{id: 'tc_1', name: 'get_time', args: {timezone: 'UTC'}},
-					],
+					toolCalls: [{id: 'tc_1', name: 'get_time', args: {timezone: 'UTC'}}],
 				};
 			}
 
@@ -58,7 +60,7 @@ async function main() {
 		defineTool('get_time', 'Get the current time in a timezone', {
 			timezone: {type: 'string', description: 'IANA timezone', required: true},
 		}),
-		async (args) => {
+		async args => {
 			const tz = String(args['timezone'] ?? 'UTC');
 			return new Date().toLocaleString('en-US', {timeZone: tz});
 		},
@@ -70,14 +72,16 @@ async function main() {
 	const logger: Middleware = {
 		name: 'event-logger',
 		onEvent(event, state) {
-			const detail
-				= event.type === 'model_response'
+			const detail =
+				event.type === 'model_response'
 					? event.result.content.slice(0, 50)
 					: event.type === 'tool_result'
-						? event.result.content.slice(0, 50)
-						: '';
+					? event.result.content.slice(0, 50)
+					: '';
 			console.log(
-				`  [${event.type}] iter=${state.iterations} errors=${state.errorCount}${detail ? ` | ${detail}` : ''}`,
+				`  [${event.type}] iter=${state.iterations} errors=${state.errorCount}${
+					detail ? ` | ${detail}` : ''
+				}`,
 			);
 		},
 	};
@@ -115,4 +119,8 @@ async function main() {
 	}
 }
 
-main().catch(console.error);
+try {
+	await main();
+} catch (error: unknown) {
+	console.error(error);
+}

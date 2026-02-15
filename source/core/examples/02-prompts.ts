@@ -11,10 +11,10 @@ import {createPromptTemplate, renderPrompt, renderTemplate} from '../prompt.js';
 
 function main() {
 	// --- 1. Simple string substitution ---
-	const rendered = renderPrompt(
-		'Hello {{name}}, welcome to {{project}}!',
-		{name: 'Alice', project: 'Ruska'},
-	);
+	const rendered = renderPrompt('Hello {{name}}, welcome to {{project}}!', {
+		name: 'Alice',
+		project: 'Ruska',
+	});
 	console.log('Simple render:', rendered);
 	// => "Hello Alice, welcome to Ruska!"
 

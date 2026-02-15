@@ -99,15 +99,11 @@ test('parseHumanContactArgs rejects non-string message', t => {
 });
 
 test('parseHumanContactArgs rejects invalid urgency value', t => {
-	t.throws(() =>
-		parseHumanContactArgs({message: 'test', urgency: 'critical'}),
-	);
+	t.throws(() => parseHumanContactArgs({message: 'test', urgency: 'critical'}));
 });
 
 test('parseHumanContactArgs rejects non-string context', t => {
-	t.throws(() =>
-		parseHumanContactArgs({message: 'test', context: 42}),
-	);
+	t.throws(() => parseHumanContactArgs({message: 'test', context: 42}));
 });
 
 // ---------------------------------------------------------------------------

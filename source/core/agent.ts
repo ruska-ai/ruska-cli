@@ -144,9 +144,10 @@ export function nextAction(
 				(e): e is Extract<AgentEvent, {type: 'human_contact'}> =>
 					e.type === 'human_contact',
 			);
-			const lastHuman = humanEvents.length > 0
-				? humanEvents[humanEvents.length - 1]!
-				: undefined;
+			const lastHuman =
+				humanEvents.length > 0
+					? humanEvents[humanEvents.length - 1]!
+					: undefined;
 			return {
 				type: 'contact_human',
 				humanRequest: lastHuman?.request,
@@ -169,9 +170,10 @@ export function nextAction(
 			}
 
 			// Look at the last event to decide
-			const lastEvent = state.events.length > 0
-				? state.events[state.events.length - 1]!
-				: undefined;
+			const lastEvent =
+				state.events.length > 0
+					? state.events[state.events.length - 1]!
+					: undefined;
 
 			if (!lastEvent) {
 				return {type: 'call_model'};
@@ -185,8 +187,8 @@ export function nextAction(
 				case 'model_response': {
 					// If model has tool calls, execute the first one
 					if (
-						lastEvent.result.toolCalls
-						&& lastEvent.result.toolCalls.length > 0
+						lastEvent.result.toolCalls &&
+						lastEvent.result.toolCalls.length > 0
 					) {
 						return {
 							type: 'execute_tool',
@@ -281,7 +283,8 @@ function findPendingToolCall(state: AgentState): ToolCall | undefined {
 // ---------------------------------------------------------------------------
 
 export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
-	const {input, model, toolRegistry, config, middleware, maxMessages} = agentInput;
+	const {input, model, toolRegistry, config, middleware, maxMessages} =
+		agentInput;
 	agentConfigSchema.parse(config);
 
 	let state = initialState(config);
@@ -313,7 +316,12 @@ export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
 			case 'call_model': {
 				// eslint-disable-next-line no-await-in-loop
 				state = await handleModelCall({
-					state, config, model, toolRegistry, middleware, maxMessages,
+					state,
+					config,
+					model,
+					toolRegistry,
+					middleware,
+					maxMessages,
 				});
 				break;
 			}
@@ -321,7 +329,10 @@ export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
 			case 'execute_tool': {
 				// eslint-disable-next-line no-await-in-loop
 				state = await handleToolExecution(
-					state, action.toolCall!, toolRegistry, middleware,
+					state,
+					action.toolCall!,
+					toolRegistry,
+					middleware,
 				);
 				break;
 			}
@@ -390,7 +401,8 @@ type ModelCallInput = {
 };
 
 async function handleModelCall(callInput: ModelCallInput): Promise<AgentState> {
-	const {state, config, model, toolRegistry, middleware, maxMessages} = callInput;
+	const {state, config, model, toolRegistry, middleware, maxMessages} =
+		callInput;
 	try {
 		// Build context from events
 		let messages = buildContext(state.events, {
@@ -450,7 +462,8 @@ async function handleToolExecution(
 	// Check beforeToolExecution middleware
 	if (middleware) {
 		const shouldExecute = await middleware.runBeforeToolExecution(
-			toolCall, currentState,
+			toolCall,
+			currentState,
 		);
 		if (!shouldExecute) {
 			// Skipped by middleware — return a skip result

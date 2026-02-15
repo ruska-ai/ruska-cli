@@ -1,6 +1,6 @@
 ---
 task: Build a CLI todo app in TypeScript
-test_command: "npx ts-node todo.ts list"
+test_command: 'npx ts-node todo.ts list'
 ---
 
 # Task: CLI Todo App (TypeScript)

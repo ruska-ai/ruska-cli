@@ -18,9 +18,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 ## User Stories
 
 ### US-001: Define Core Schemas & Types
+
 **Description:** As a developer, I want Zod schemas as the single source of truth for all agent types so that runtime validation and TypeScript types stay in sync automatically.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/schemas.ts` with Zod schemas for: `CoreMessage`, `ToolCall`, `ModelResult`, `PromptTemplate`, `ToolParameterSchema`, `ToolDefinition`, `ToolResult`, `AgentEvent` (discriminated union), `HumanContactRequest`, `CompactError`, `AgentState`, `AgentConfig`, `AgentAction`
 - [ ] All TypeScript types are derived via `z.infer<>` -- no manually duplicated type definitions
 - [ ] Export `validate*()` (strict) and `safeValidate*()` (safe parse) helper functions for each schema
@@ -32,9 +34,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run build` compiles without errors
 
 ### US-002: Build Middleware System
+
 **Description:** As a developer, I want a composable middleware system with typed hooks so that I can extend agent behavior (logging, error enrichment, context injection, tool interception) without modifying core logic.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/middleware.ts` exporting `Middleware` type and `createMiddlewareStack()` factory
 - [ ] `Middleware` type has named hooks: `onEvent`, `onError`, `beforeModel`, `beforePrompt`, `beforeToolExecution`, `afterToolExecution` -- all optional
 - [ ] `MiddlewareStack` exposes `use(middleware)` for registration and `run*()` methods for each hook
@@ -51,9 +55,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-003: Implement Compact Errors
+
 **Description:** As a developer, I want normalized error handling with retry tracking so that errors are consistently formatted for LLM context and self-healing.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/errors.ts` with pure functions: `compactify(error, attempt, maxAttempts)`, `isRecoverable(error)`, `formatForContext(error)`
 - [ ] `compactify` normalizes `Error`, `string`, and `unknown` inputs into `CompactError` shape
 - [ ] `isRecoverable` checks remaining retries
@@ -63,9 +69,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-004: Implement Prompt Manager
+
 **Description:** As a developer, I want prompt-as-code with variable substitution so that prompts are versioned, named, and validated at render time.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/prompt.ts` with pure functions: `renderPrompt(template, variables)`, `createPromptTemplate(name, version, template)`, `renderTemplate(promptTemplate, variables)`
 - [ ] `renderPrompt` performs `{{variable}}` substitution
 - [ ] `createPromptTemplate` extracts variable names from the template string
@@ -75,9 +83,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-005: Implement Thread / Event Log
+
 **Description:** As a developer, I want an append-only event log as the single source of truth for agent history so that agent state can be reconstructed, serialized, and resumed.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/thread.ts` with `createThread(initial?)` factory and `deserializeThread(json)` hydrator
 - [ ] `Thread` object exposes: `append(event)`, `events()`, `eventsOfType(type)`, `length`, `serialize()`
 - [ ] Events are validated via `AgentEventSchema` on append
@@ -87,9 +97,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-006: Implement Context Builder
+
 **Description:** As a developer, I want to build a model context window from the event log so that the LLM receives a properly formatted, windowed message array with error context for self-healing.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/context.ts` with `buildContext(events, options?)` and `estimateTokens(messages)`
 - [ ] `buildContext` reconstructs `CoreMessage[]` from `AgentEvent[]`
 - [ ] System prompt is prepended as first message
@@ -100,9 +112,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-007: Implement Tool Registry
+
 **Description:** As a developer, I want a tool registry implementing the 3-step structured output pattern (LLM JSON -> code executes -> results feed back) so that tools are validated, executed safely, and errors are captured.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/tool.ts` with `createToolRegistry()` factory and `defineTool()` convenience builder
 - [ ] `ToolRegistry` exposes: `register(definition, executor)`, `definitions()`, `execute(toolCall)`, `has(name)`
 - [ ] `ToolExecutor` type: `(args: Record<string, unknown>) => Promise<string>`
@@ -114,9 +128,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-008: Implement Bash Tool
+
 **Description:** As a developer, I want a `bash_tool` registered in the core tool system that delegates to the existing `lib/local-tools/` infrastructure so that the full Factor 4 loop is demonstrated end-to-end.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/bash-tool.ts` with `bashToolDefinition`, `createBashExecutor()`, and `registerBashTool(registry)`
 - [ ] `bashToolDefinition` has parameters: `command` (required string), `cwd` (optional string), `timeout` (optional number)
 - [ ] `createBashExecutor()` wraps `executeBash()` from `source/lib/local-tools/bash-executor.ts`
@@ -127,9 +143,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-009: Implement Human Contact Tool
+
 **Description:** As a developer, I want human interaction modeled as a structured tool so that the agent can request human input through the standard tool interface.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/human.ts` with `humanContactToolDefinition`, `parseHumanContactArgs(args)`, and `HumanContactHandler` type
 - [ ] `humanContactToolDefinition` is a standard `ToolDefinition` for `contact_human`
 - [ ] `parseHumanContactArgs` validates LLM output against `HumanContactRequestSchema`
@@ -138,9 +156,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-010: Implement Agent Loop / Reducer
+
 **Description:** As a developer, I want an agent loop implemented as a stateless reducer so that agent behavior is predictable, testable, and composable with middleware.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/agent.ts` with `initialState(config)`, `reduce(state, event)`, `nextAction(state)`, and `runAgent(input, model, toolRegistry, options)`
 - [ ] `initialState` creates an idle state validated via `AgentConfigSchema`
 - [ ] `reduce` is a **pure function** with no side effects -- returns new state from `(state, event)`
@@ -155,9 +175,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-011: Implement Model Interface
+
 **Description:** As a developer, I want an LLM abstraction layer so that the agent loop is decoupled from the specific streaming implementation.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/model.ts` with `ModelInterface` type and `createStreamModel(config)` factory
 - [ ] `ModelInterface`: `{ invoke(messages: CoreMessage[], tools?: ToolDefinition[]): Promise<ModelResult> }`
 - [ ] `createStreamModel` bridges to existing `StreamService` (`source/lib/services/stream-service.ts`)
@@ -167,9 +189,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-012: Create Barrel Export
+
 **Description:** As a developer, I want a single entry point for the core module so that consumers import from `source/core/index.ts`.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/index.ts` re-exporting all public API from core modules
 - [ ] Follow pattern of `source/types/index.ts`
 - [ ] All exports are importable from `source/core/index.ts`
@@ -177,9 +201,11 @@ The entire change is **additive**. No existing files are modified. The `core/` m
 - [ ] `npm run lint` passes
 
 ### US-013: Write Core Module README
+
 **Description:** As a developer, I want a README in `source/core/` so that I can quickly understand the module's purpose, architecture, setup, usage, and how to run tests.
 
 **Acceptance Criteria:**
+
 - [ ] Create `source/core/README.md`
 - [ ] **Overview** section: describes the module's purpose and the 12-factor-agents design principles it implements
 - [ ] **Architecture** section: lists each module file (`schemas.ts`, `middleware.ts`, `errors.ts`, `prompt.ts`, `thread.ts`, `context.ts`, `tool.ts`, `bash-tool.ts`, `human.ts`, `agent.ts`, `model.ts`) with a one-line description and which factor(s) it addresses

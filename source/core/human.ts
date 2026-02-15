@@ -31,7 +31,8 @@ export const humanContactToolDefinition: ToolDefinition = {
 		},
 		context: {
 			type: 'string',
-			description: 'Additional context to help the human understand the request',
+			description:
+				'Additional context to help the human understand the request',
 		},
 		urgency: {
 			type: 'string',

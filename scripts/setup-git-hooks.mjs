@@ -5,10 +5,19 @@ import process from 'node:process';
 
 const permissionDeniedCodes = new Set(['EACCES', 'EPERM', 'EROFS']);
 const trackedHooksPath = '.githooks';
-const trackedPreCommitPath = path.join(process.cwd(), trackedHooksPath, 'pre-commit');
+const trackedPreCommitPath = path.join(
+	process.cwd(),
+	trackedHooksPath,
+	'pre-commit',
+);
 
 const getErrorCode = error => {
-	if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+	if (
+		error &&
+		typeof error === 'object' &&
+		'code' in error &&
+		typeof error.code === 'string'
+	) {
 		return error.code;
 	}
 
@@ -16,7 +25,12 @@ const getErrorCode = error => {
 };
 
 const getErrorStatus = error => {
-	if (error && typeof error === 'object' && 'status' in error && typeof error.status === 'number') {
+	if (
+		error &&
+		typeof error === 'object' &&
+		'status' in error &&
+		typeof error.status === 'number'
+	) {
 		return error.status;
 	}
 
@@ -24,7 +38,12 @@ const getErrorStatus = error => {
 };
 
 const getErrorStderr = error => {
-	if (error && typeof error === 'object' && 'stderr' in error && typeof error.stderr === 'string') {
+	if (
+		error &&
+		typeof error === 'object' &&
+		'stderr' in error &&
+		typeof error.stderr === 'string'
+	) {
 		return error.stderr;
 	}
 
@@ -37,7 +56,10 @@ const isPermissionError = error => {
 	}
 
 	const stderr = getErrorStderr(error).toLowerCase();
-	return stderr.includes('permission denied') || stderr.includes('could not lock config file');
+	return (
+		stderr.includes('permission denied') ||
+		stderr.includes('could not lock config file')
+	);
 };
 
 const runGit = arguments_ =>
@@ -48,7 +70,9 @@ const runGit = arguments_ =>
 
 const ensureTrackedHookIsExecutable = () => {
 	if (!fs.existsSync(trackedPreCommitPath)) {
-		console.warn(`Skipping git hook setup because ${trackedHooksPath}/pre-commit is missing.`);
+		console.warn(
+			`Skipping git hook setup because ${trackedHooksPath}/pre-commit is missing.`,
+		);
 		return false;
 	}
 
@@ -57,7 +81,9 @@ const ensureTrackedHookIsExecutable = () => {
 		return true;
 	} catch (error) {
 		if (isPermissionError(error)) {
-			console.warn(`Skipping git hook chmod due to permission restrictions: ${trackedPreCommitPath}`);
+			console.warn(
+				`Skipping git hook chmod due to permission restrictions: ${trackedPreCommitPath}`,
+			);
 			return false;
 		}
 
@@ -74,7 +100,9 @@ const readCurrentHooksPath = () => {
 		}
 
 		if (isPermissionError(error)) {
-			console.warn('Skipping core.hooksPath setup due to permission restrictions.');
+			console.warn(
+				'Skipping core.hooksPath setup due to permission restrictions.',
+			);
 			return null;
 		}
 
@@ -87,7 +115,9 @@ const setHooksPath = hooksPath => {
 		runGit(['config', '--local', 'core.hooksPath', hooksPath]);
 	} catch (error) {
 		if (isPermissionError(error)) {
-			console.warn('Skipping core.hooksPath setup due to permission restrictions.');
+			console.warn(
+				'Skipping core.hooksPath setup due to permission restrictions.',
+			);
 			return false;
 		}
 

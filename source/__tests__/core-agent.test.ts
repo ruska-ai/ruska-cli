@@ -14,12 +14,7 @@ import {
 import {createMiddlewareStack} from '../core/middleware.js';
 import {createToolRegistry} from '../core/tool.js';
 import {type ModelInterface} from '../core/model.js';
-import {
-	initialState,
-	reduce,
-	nextAction,
-	runAgent,
-} from '../core/agent.js';
+import {initialState, reduce, nextAction, runAgent} from '../core/agent.js';
 
 // ---------------------------------------------------------------------------
 // Test fixtures
@@ -87,11 +82,13 @@ test('initialState creates idle state', t => {
 });
 
 test('initialState validates config', t => {
-	t.throws(() => initialState({
-		systemPrompt: 'test',
-		maxIterations: -1,
-		maxErrors: 0,
-	}));
+	t.throws(() =>
+		initialState({
+			systemPrompt: 'test',
+			maxIterations: -1,
+			maxErrors: 0,
+		}),
+	);
 });
 
 test('initialState accepts valid config', t => {
@@ -299,11 +296,13 @@ test('nextAction for error state returns error', t => {
 test('nextAction for waiting_for_human returns contact_human', t => {
 	const state = makeState({
 		status: 'waiting_for_human',
-		events: [{
-			type: 'human_contact',
-			request: {message: 'help me'},
-			timestamp: Date.now(),
-		}],
+		events: [
+			{
+				type: 'human_contact',
+				request: {message: 'help me'},
+				timestamp: Date.now(),
+			},
+		],
 	});
 	const config = makeConfig();
 	const action = nextAction(state, config);
@@ -343,11 +342,13 @@ test('nextAction returns error when errorCount exceeds maxErrors', t => {
 test('nextAction after user_input returns call_model', t => {
 	const state = makeState({
 		status: 'running',
-		events: [{
-			type: 'user_input',
-			message: {role: 'user', content: 'hi'},
-			timestamp: Date.now(),
-		}],
+		events: [
+			{
+				type: 'user_input',
+				message: {role: 'user', content: 'hi'},
+				timestamp: Date.now(),
+			},
+		],
 	});
 	const config = makeConfig();
 	const action = nextAction(state, config);
@@ -362,11 +363,13 @@ test('nextAction after model_response with tool calls returns execute_tool', t =
 	const toolCall: ToolCall = {id: 'tc-1', name: 'bash', args: {command: 'ls'}};
 	const state = makeState({
 		status: 'running',
-		events: [{
-			type: 'model_response',
-			result: {content: '', toolCalls: [toolCall]},
-			timestamp: Date.now(),
-		}],
+		events: [
+			{
+				type: 'model_response',
+				result: {content: '', toolCalls: [toolCall]},
+				timestamp: Date.now(),
+			},
+		],
 	});
 	const config = makeConfig();
 	const action = nextAction(state, config);
@@ -382,11 +385,13 @@ test('nextAction after model_response with tool calls returns execute_tool', t =
 test('nextAction after model_response with done returns done', t => {
 	const state = makeState({
 		status: 'running',
-		events: [{
-			type: 'model_response',
-			result: {content: 'all done', done: true},
-			timestamp: Date.now(),
-		}],
+		events: [
+			{
+				type: 'model_response',
+				result: {content: 'all done', done: true},
+				timestamp: Date.now(),
+			},
+		],
 	});
 	const config = makeConfig();
 	const action = nextAction(state, config);
@@ -400,11 +405,13 @@ test('nextAction after model_response with done returns done', t => {
 test('nextAction after model_response with no tool calls returns done', t => {
 	const state = makeState({
 		status: 'running',
-		events: [{
-			type: 'model_response',
-			result: {content: 'finished'},
-			timestamp: Date.now(),
-		}],
+		events: [
+			{
+				type: 'model_response',
+				result: {content: 'finished'},
+				timestamp: Date.now(),
+			},
+		],
 	});
 	const config = makeConfig();
 	const action = nextAction(state, config);
@@ -483,17 +490,19 @@ test('nextAction after recoverable error returns call_model', t => {
 	const state = makeState({
 		status: 'running',
 		errorCount: 1,
-		events: [{
-			type: 'error',
-			error: {
-				message: 'oops',
-				attempt: 1,
-				maxAttempts: 3,
-				recoverable: true,
+		events: [
+			{
+				type: 'error',
+				error: {
+					message: 'oops',
+					attempt: 1,
+					maxAttempts: 3,
+					recoverable: true,
+					timestamp: Date.now(),
+				},
 				timestamp: Date.now(),
 			},
-			timestamp: Date.now(),
-		}],
+		],
 	});
 	const config = makeConfig({maxErrors: 3});
 	const action = nextAction(state, config);
@@ -509,7 +518,12 @@ test('runAgent completes with simple model response', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'hi', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'hi',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 	t.true(state.iterations > 0);
 });
@@ -527,11 +541,16 @@ test('runAgent executes tool calls', async t => {
 	const registry = createToolRegistry();
 	registry.register(
 		{name: 'echo', description: 'Echo text', parameters: {}},
-		async (args) => `echoed: ${String(args['text'])}`,
+		async args => `echoed: ${String(args['text'])}`,
 	);
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 
 	// Should have tool_call and tool_result events
@@ -555,11 +574,16 @@ test('runAgent executes multiple tool calls from single model response', async t
 	const registry = createToolRegistry();
 	registry.register(
 		{name: 'echo', description: 'Echo text', parameters: {}},
-		async (args) => `echoed: ${String(args['text'])}`,
+		async args => `echoed: ${String(args['text'])}`,
 	);
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 
 	const toolResults = state.events.filter(e => e.type === 'tool_result');
@@ -580,7 +604,12 @@ test('runAgent respects maxIterations', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig({maxIterations: 3});
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 	t.true(state.iterations <= 3);
 });
@@ -604,7 +633,12 @@ test('runAgent recovers from model errors', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig({maxErrors: 3});
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 	t.is(state.errorCount, 1);
 });
@@ -618,7 +652,12 @@ test('runAgent stops when maxErrors exceeded', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig({maxErrors: 2});
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'error');
 	t.true(state.errorCount > 0);
 });
@@ -641,7 +680,13 @@ test('runAgent calls middleware onEvent hooks', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig();
 
-	await runAgent({input: 'test', model, toolRegistry: registry, config, middleware});
+	await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+		middleware,
+	});
 
 	t.true(eventTypes.includes('user_input'));
 	t.true(eventTypes.includes('model_response'));
@@ -667,7 +712,13 @@ test('runAgent calls beforeModel middleware', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig();
 
-	await runAgent({input: 'test', model, toolRegistry: registry, config, middleware});
+	await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+		middleware,
+	});
 
 	t.true(beforeModelCalled);
 });
@@ -697,7 +748,13 @@ test('runAgent skips tool when beforeToolExecution returns false', async t => {
 	);
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config, middleware});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+		middleware,
+	});
 
 	// Tool result should indicate skip
 	const toolResults = state.events.filter(e => e.type === 'tool_result');
@@ -721,7 +778,9 @@ test('runAgent handles human contact with handler', async t => {
 			if (callCount === 1) {
 				return {
 					content: '',
-					toolCalls: [{id: 'tc-1', name: 'contact_human', args: {message: 'need input'}}],
+					toolCalls: [
+						{id: 'tc-1', name: 'contact_human', args: {message: 'need input'}},
+					],
 				};
 			}
 
@@ -736,7 +795,12 @@ test('runAgent handles human contact with handler', async t => {
 	);
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 });
 
@@ -771,7 +835,12 @@ test('runAgent works without middleware', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 });
 
@@ -794,7 +863,12 @@ test('runAgent captures tool execution errors', async t => {
 	);
 	const config = makeConfig();
 
-	const state = await runAgent({input: 'test', model, toolRegistry: registry, config});
+	const state = await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+	});
 	t.is(state.status, 'done');
 
 	// Tool result should have isError
@@ -834,6 +908,12 @@ test('runAgent calls onError middleware on model failure', async t => {
 	const registry = createToolRegistry();
 	const config = makeConfig({maxErrors: 3});
 
-	await runAgent({input: 'test', model, toolRegistry: registry, config, middleware});
+	await runAgent({
+		input: 'test',
+		model,
+		toolRegistry: registry,
+		config,
+		middleware,
+	});
 	t.true(errors.includes('model broke'));
 });

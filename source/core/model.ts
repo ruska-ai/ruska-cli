@@ -118,9 +118,7 @@ function collectModelResult(events: StreamEvent[]): ModelResult {
 					content += extractTextFromPayload(msg);
 
 					if (msg.tool_calls && msg.tool_calls.length > 0) {
-						const converted = streamToolCallsToCoreToolCalls(
-							msg.tool_calls,
-						);
+						const converted = streamToolCallsToCoreToolCalls(msg.tool_calls);
 						toolCalls = toolCalls ? [...toolCalls, ...converted] : converted;
 					}
 				}

@@ -35,7 +35,11 @@ function makeToolResult(toolCallId: string, content: string): AgentEvent {
 	return event;
 }
 
-function makeErrorEvent(message: string, attempt: number, maxAttempts: number): AgentEvent {
+function makeErrorEvent(
+	message: string,
+	attempt: number,
+	maxAttempts: number,
+): AgentEvent {
 	const event: AgentEvent = {
 		type: 'error',
 		error: {
@@ -72,12 +76,12 @@ function makeDoneEvent(reason: string): AgentEvent {
 // buildContext — empty events
 // ---------------------------------------------------------------------------
 
-test('buildContext: returns empty array for no events', (t) => {
+test('buildContext: returns empty array for no events', t => {
 	const result = buildContext([]);
 	t.deepEqual(result, []);
 });
 
-test('buildContext: returns only system message for no events with systemPrompt', (t) => {
+test('buildContext: returns only system message for no events with systemPrompt', t => {
 	const result = buildContext([], {systemPrompt: 'You are helpful.'});
 	t.is(result.length, 1);
 	t.is(result[0]!.role, 'system');
@@ -88,7 +92,7 @@ test('buildContext: returns only system message for no events with systemPrompt'
 // buildContext — system prompt prepend
 // ---------------------------------------------------------------------------
 
-test('buildContext: prepends system prompt as first message', (t) => {
+test('buildContext: prepends system prompt as first message', t => {
 	const events = [makeUserInput('hello')];
 	const result = buildContext(events, {systemPrompt: 'Be concise.'});
 	t.is(result.length, 2);
@@ -102,21 +106,21 @@ test('buildContext: prepends system prompt as first message', (t) => {
 // buildContext — message extraction from events
 // ---------------------------------------------------------------------------
 
-test('buildContext: extracts user_input as user message', (t) => {
+test('buildContext: extracts user_input as user message', t => {
 	const result = buildContext([makeUserInput('hi')]);
 	t.is(result.length, 1);
 	t.is(result[0]!.role, 'user');
 	t.is(result[0]!.content, 'hi');
 });
 
-test('buildContext: extracts model_response as assistant message', (t) => {
+test('buildContext: extracts model_response as assistant message', t => {
 	const result = buildContext([makeModelResponse('I can help')]);
 	t.is(result.length, 1);
 	t.is(result[0]!.role, 'assistant');
 	t.is(result[0]!.content, 'I can help');
 });
 
-test('buildContext: extracts tool_result as tool message with toolCallId', (t) => {
+test('buildContext: extracts tool_result as tool message with toolCallId', t => {
 	const result = buildContext([makeToolResult('call-1', 'success')]);
 	t.is(result.length, 1);
 	t.is(result[0]!.role, 'tool');
@@ -124,7 +128,7 @@ test('buildContext: extracts tool_result as tool message with toolCallId', (t) =
 	t.is(result[0]!.toolCallId, 'call-1');
 });
 
-test('buildContext: formats error events into user-role context', (t) => {
+test('buildContext: formats error events into user-role context', t => {
 	const result = buildContext([makeErrorEvent('timeout', 1, 3)]);
 	t.is(result.length, 1);
 	t.is(result[0]!.role, 'user');
@@ -132,12 +136,12 @@ test('buildContext: formats error events into user-role context', (t) => {
 	t.true(result[0]!.content.includes('timeout'));
 });
 
-test('buildContext: ignores tool_call events (no message contribution)', (t) => {
+test('buildContext: ignores tool_call events (no message contribution)', t => {
 	const result = buildContext([makeToolCallEvent('tc-1', 'bash')]);
 	t.deepEqual(result, []);
 });
 
-test('buildContext: ignores done events (no message contribution)', (t) => {
+test('buildContext: ignores done events (no message contribution)', t => {
 	const result = buildContext([makeDoneEvent('completed')]);
 	t.deepEqual(result, []);
 });
@@ -146,7 +150,7 @@ test('buildContext: ignores done events (no message contribution)', (t) => {
 // buildContext — mixed event sequence
 // ---------------------------------------------------------------------------
 
-test('buildContext: reconstructs conversation from mixed events', (t) => {
+test('buildContext: reconstructs conversation from mixed events', t => {
 	const events: AgentEvent[] = [
 		makeUserInput('run ls'),
 		makeModelResponse('I will run ls for you.'),
@@ -166,7 +170,7 @@ test('buildContext: reconstructs conversation from mixed events', (t) => {
 // buildContext — windowing (maxMessages)
 // ---------------------------------------------------------------------------
 
-test('buildContext: maxMessages applies tail windowing', (t) => {
+test('buildContext: maxMessages applies tail windowing', t => {
 	const events = [
 		makeUserInput('first'),
 		makeModelResponse('reply-1'),
@@ -181,7 +185,7 @@ test('buildContext: maxMessages applies tail windowing', (t) => {
 	t.is(result[1]!.content, 'reply-3');
 });
 
-test('buildContext: maxMessages with systemPrompt preserves system + tail', (t) => {
+test('buildContext: maxMessages with systemPrompt preserves system + tail', t => {
 	const events = [
 		makeUserInput('first'),
 		makeModelResponse('reply-1'),
@@ -200,7 +204,7 @@ test('buildContext: maxMessages with systemPrompt preserves system + tail', (t) 
 	t.is(result[2]!.content, 'reply-2');
 });
 
-test('buildContext: maxMessages larger than message count returns all', (t) => {
+test('buildContext: maxMessages larger than message count returns all', t => {
 	const events = [makeUserInput('only')];
 	const result = buildContext(events, {maxMessages: 100});
 	t.is(result.length, 1);
@@ -211,7 +215,7 @@ test('buildContext: maxMessages larger than message count returns all', (t) => {
 // buildContext — error context for self-healing
 // ---------------------------------------------------------------------------
 
-test('buildContext: error events include formatted error details', (t) => {
+test('buildContext: error events include formatted error details', t => {
 	const events = [
 		makeUserInput('do something'),
 		makeErrorEvent('connection refused', 1, 3),
@@ -224,7 +228,7 @@ test('buildContext: error events include formatted error details', (t) => {
 	t.true(result[1]!.content.includes('Recoverable'));
 });
 
-test('buildContext: fatal error is included in context', (t) => {
+test('buildContext: fatal error is included in context', t => {
 	const result = buildContext([makeErrorEvent('fatal', 3, 3)]);
 	t.is(result[0]!.role, 'user');
 	t.true(result[0]!.content.includes('Fatal'));
@@ -234,11 +238,11 @@ test('buildContext: fatal error is included in context', (t) => {
 // estimateTokens
 // ---------------------------------------------------------------------------
 
-test('estimateTokens: returns 0 for empty messages', (t) => {
+test('estimateTokens: returns 0 for empty messages', t => {
 	t.is(estimateTokens([]), 0);
 });
 
-test('estimateTokens: estimates tokens for single message', (t) => {
+test('estimateTokens: estimates tokens for single message', t => {
 	const messages: CoreMessage[] = [{role: 'user', content: 'hello world'}];
 	const tokens = estimateTokens(messages);
 	t.true(tokens > 0);
@@ -246,7 +250,7 @@ test('estimateTokens: estimates tokens for single message', (t) => {
 	t.true(tokens < 100);
 });
 
-test('estimateTokens: increases with more messages', (t) => {
+test('estimateTokens: increases with more messages', t => {
 	const one: CoreMessage[] = [{role: 'user', content: 'hello'}];
 	const two: CoreMessage[] = [
 		{role: 'user', content: 'hello'},
@@ -255,7 +259,7 @@ test('estimateTokens: increases with more messages', (t) => {
 	t.true(estimateTokens(two) > estimateTokens(one));
 });
 
-test('estimateTokens: accounts for name and toolCallId', (t) => {
+test('estimateTokens: accounts for name and toolCallId', t => {
 	const withoutExtras: CoreMessage[] = [{role: 'tool', content: 'result'}];
 	const withExtras: CoreMessage[] = [
 		{role: 'tool', content: 'result', name: 'bash', toolCallId: 'call-123'},
@@ -263,7 +267,7 @@ test('estimateTokens: accounts for name and toolCallId', (t) => {
 	t.true(estimateTokens(withExtras) > estimateTokens(withoutExtras));
 });
 
-test('estimateTokens: returns integer', (t) => {
+test('estimateTokens: returns integer', t => {
 	const messages: CoreMessage[] = [{role: 'user', content: 'a'}];
 	const tokens = estimateTokens(messages);
 	t.is(tokens, Math.ceil(tokens));

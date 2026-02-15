@@ -7,7 +7,11 @@
  * Run: npx tsx source/core/examples/04-middleware.ts
  */
 
-import {type AgentEvent, type AgentState, type CoreMessage} from '../schemas.js';
+import {
+	type AgentEvent,
+	type AgentState,
+	type CoreMessage,
+} from '../schemas.js';
 import {createMiddlewareStack, type Middleware} from '../middleware.js';
 
 async function main() {
@@ -18,10 +22,14 @@ async function main() {
 	const logger: Middleware = {
 		name: 'logger',
 		onEvent(event: AgentEvent, state: AgentState) {
-			console.log(`[LOG] Event: ${event.type} | iterations=${state.iterations}`);
+			console.log(
+				`[LOG] Event: ${event.type} | iterations=${state.iterations}`,
+			);
 		},
 		onError(error, _state) {
-			console.log(`[LOG] Error: ${error.message} (attempt ${error.attempt}/${error.maxAttempts})`);
+			console.log(
+				`[LOG] Error: ${error.message} (attempt ${error.attempt}/${error.maxAttempts})`,
+			);
 		},
 	};
 	stack.use(logger);
@@ -32,7 +40,8 @@ async function main() {
 		beforeModel(messages: CoreMessage[], _state: AgentState): CoreMessage[] {
 			const ragContext: CoreMessage = {
 				role: 'user',
-				content: '[Retrieved context]: The project uses TypeScript with ESM modules.',
+				content:
+					'[Retrieved context]: The project uses TypeScript with ESM modules.',
 			};
 			return [...messages, ragContext];
 		},
@@ -67,7 +76,11 @@ async function main() {
 	// Simulate onEvent
 	console.log('--- onEvent ---');
 	await stack.runOnEvent(
-		{type: 'user_input', message: {role: 'user', content: 'hello'}, timestamp: Date.now()},
+		{
+			type: 'user_input',
+			message: {role: 'user', content: 'hello'},
+			timestamp: Date.now(),
+		},
 		mockState,
 	);
 
@@ -77,10 +90,16 @@ async function main() {
 		{role: 'system', content: 'You are helpful.'},
 		{role: 'user', content: 'What stack does this project use?'},
 	];
-	const enrichedMessages = await stack.runBeforeModel(originalMessages, mockState);
+	const enrichedMessages = await stack.runBeforeModel(
+		originalMessages,
+		mockState,
+	);
 	console.log('Messages before:', originalMessages.length);
 	console.log('Messages after:', enrichedMessages.length);
-	console.log('Injected:', enrichedMessages[enrichedMessages.length - 1]!.content.slice(0, 60));
+	console.log(
+		'Injected:',
+		enrichedMessages[enrichedMessages.length - 1]!.content.slice(0, 60),
+	);
 
 	// Simulate beforeToolExecution (safe command)
 	console.log('\n--- beforeToolExecution (safe) ---');
@@ -88,7 +107,7 @@ async function main() {
 		{id: 'tc_1', name: 'bash', args: {command: 'ls -la'}},
 		mockState,
 	);
-	console.log('Allowed:', allowed); // true
+	console.log('Allowed:', allowed); // True
 
 	// Simulate beforeToolExecution (dangerous command)
 	console.log('\n--- beforeToolExecution (blocked) ---');
@@ -96,7 +115,7 @@ async function main() {
 		{id: 'tc_2', name: 'bash', args: {command: 'rm -rf /'}},
 		mockState,
 	);
-	console.log('Allowed:', blocked); // false
+	console.log('Allowed:', blocked); // False
 
 	// Simulate onError
 	console.log('\n--- onError ---');
@@ -112,4 +131,8 @@ async function main() {
 	);
 }
 
-main().catch(console.error);
+try {
+	await main();
+} catch (error: unknown) {
+	console.error(error);
+}

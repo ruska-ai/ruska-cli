@@ -66,8 +66,8 @@ export function buildContext(
 	}
 
 	// Apply tail windowing if maxMessages is specified
-	const windowed
-		= options?.maxMessages !== undefined && messages.length > options.maxMessages
+	const windowed =
+		options?.maxMessages !== undefined && messages.length > options.maxMessages
 			? messages.slice(-options.maxMessages)
 			: messages;
 

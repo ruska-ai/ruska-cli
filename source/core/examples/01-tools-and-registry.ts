@@ -15,7 +15,10 @@ async function main() {
 	const registry = createToolRegistry();
 	registerBashTool(registry);
 
-	console.log('Registered tools:', registry.definitions().map(d => d.name));
+	console.log(
+		'Registered tools:',
+		registry.definitions().map(d => d.name),
+	);
 	// => ['bash']
 
 	// --- 2. Define and register a custom tool ---
@@ -28,13 +31,18 @@ async function main() {
 		},
 	);
 
-	registry.register(weatherTool, async (args) => {
+	registry.register(weatherTool, async args => {
 		const city = String(args['city']);
 		const units = String(args['units'] ?? 'celsius');
-		return `Weather in ${city}: 22°${units === 'celsius' ? 'C' : 'F'}, partly cloudy`;
+		return `Weather in ${city}: 22°${
+			units === 'celsius' ? 'C' : 'F'
+		}, partly cloudy`;
 	});
 
-	console.log('All tools:', registry.definitions().map(d => d.name));
+	console.log(
+		'All tools:',
+		registry.definitions().map(d => d.name),
+	);
 	// => ['bash', 'get_weather']
 
 	// --- 3. Execute a tool call (simulating what the LLM would produce) ---
@@ -75,8 +83,12 @@ async function main() {
 	// => { toolCallId: 'call_3', content: 'Connection refused', isError: true }
 
 	// --- 6. Check if a tool exists ---
-	console.log('Has bash?', registry.has('bash')); // true
-	console.log('Has foo?', registry.has('foo'));    // false
+	console.log('Has bash?', registry.has('bash')); // True
+	console.log('Has foo?', registry.has('foo')); // False
 }
 
-main().catch(console.error);
+try {
+	await main();
+} catch (error: unknown) {
+	console.error(error);
+}

@@ -4,10 +4,7 @@
  * Covers US-006.
  */
 
-import {
-	type AgentEvent,
-	agentEventSchema,
-} from './schemas.js';
+import {type AgentEvent, agentEventSchema} from './schemas.js';
 
 export type Thread = {
 	/** Number of events in the log. */
@@ -74,8 +71,8 @@ export function deserializeThread(json: string): Thread {
 		throw new TypeError('Expected an array of events');
 	}
 
-	const events: AgentEvent[] = raw.map(
-		(item: unknown) => agentEventSchema.parse(item),
+	const events: AgentEvent[] = raw.map((item: unknown) =>
+		agentEventSchema.parse(item),
 	);
 
 	return createThread(events);

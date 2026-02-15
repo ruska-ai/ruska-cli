@@ -15,9 +15,7 @@ import {
 /**
  * Executor function type: receives parsed args, returns content string.
  */
-export type ToolExecutor = (
-	args: Record<string, unknown>,
-) => Promise<string>;
+export type ToolExecutor = (args: Record<string, unknown>) => Promise<string>;
 
 /**
  * ToolRegistry interface.
@@ -36,7 +34,10 @@ export type ToolRegistry = {
  * Creates a new tool registry.
  */
 export function createToolRegistry(): ToolRegistry {
-	const tools = new Map<string, {definition: ToolDefinition; executor: ToolExecutor}>();
+	const tools = new Map<
+		string,
+		{definition: ToolDefinition; executor: ToolExecutor}
+	>();
 
 	return {
 		register(definition: ToolDefinition, executor: ToolExecutor): void {
@@ -68,7 +69,7 @@ export function createToolRegistry(): ToolRegistry {
 			}
 
 			try {
-					const content = await entry.executor(toolCall.args);
+				const content = await entry.executor(toolCall.args);
 				return {
 					toolCallId: toolCall.id,
 					content,

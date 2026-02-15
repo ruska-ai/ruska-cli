@@ -5,7 +5,11 @@
 
 import test from 'ava';
 import {type ToolCall, type ToolDefinition} from '../core/schemas.js';
-import {createToolRegistry, defineTool, type ToolExecutor} from '../core/tool.js';
+import {
+	createToolRegistry,
+	defineTool,
+	type ToolExecutor,
+} from '../core/tool.js';
 
 // ---------------------------------------------------------------------------
 // Test fixtures
@@ -15,7 +19,11 @@ const echoDefinition: ToolDefinition = {
 	name: 'echo',
 	description: 'Echoes the input back',
 	parameters: {
-		message: {type: 'string', description: 'The message to echo', required: true},
+		message: {
+			type: 'string',
+			description: 'The message to echo',
+			required: true,
+		},
 	},
 };
 
@@ -32,7 +40,10 @@ const failExecutor: ToolExecutor = async () => {
 	throw new Error('executor exploded');
 };
 
-const makeToolCall = (name: string, args: Record<string, unknown>): ToolCall => ({
+const makeToolCall = (
+	name: string,
+	args: Record<string, unknown>,
+): ToolCall => ({
 	id: `tc-${Date.now()}`,
 	name,
 	args,
