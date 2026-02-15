@@ -27,6 +27,9 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - XO `capitalized-comments` rule requires inline comments to start with an uppercase letter
 - XO `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
 - XO `import/order` requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`)
+- XO `max-depth` limits nesting to 4 levels — extract deeply nested logic into helper functions
+- XO `unicorn/prefer-switch` triggers when 3+ else-if branches compare the same discriminant — use switch instead
+- Mock `StreamServiceInterface` in tests using async generator: `async function*() { for (const e of events) yield e; }`
 ---
 
 ## 2026-02-14 - US-001
@@ -138,4 +141,18 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - `parseHumanContactArgs` delegates directly to `humanContactRequestSchema.parse()` — no wrapper logic needed since the schema already validates urgency enum and optional fields
   - TypeScript strict mode: iterating over `['low', 'medium', 'high']` infers `string` type — use `as const` to preserve literal union type for enum comparisons
   - Simple modules with pure functions and type exports have zero XO lint friction
+---
+
+## 2026-02-14 - US-011
+- What was implemented: Created `source/core/model.ts` with `ModelInterface` type, `createStreamModel()` factory, and conversion helpers (`coreToStreamMessage`, `streamToolCallsToCoreToolCalls`) that bridge between core schemas and the existing `StreamService` infrastructure, plus `source/__tests__/core-model.test.ts` with 19 comprehensive tests
+- Files changed: source/core/model.ts (new), source/__tests__/core-model.test.ts (new)
+- **Learnings for future iterations:**
+  - After checking `msg.role === 'tool'` in an if-branch, TypeScript narrows the remaining roles automatically — no `as` cast needed for `'user' | 'assistant' | 'system'`
+  - XO `unicorn/prefer-switch` rule triggers when 3+ `else-if` branches compare the same discriminant — refactor to `switch`
+  - XO `max-depth` rule limits nesting to 4 levels — extract nested logic (e.g., content block text extraction) into helper functions
+  - `MessagePayload.content` is `string | ContentBlock[] | undefined` — handle all three branches explicitly
+  - Stream tool_calls format (`{id, name, args}`) is identical to core `ToolCall` schema — conversion is a simple map with no transformation needed
+  - `StreamRequest.tools` is `string[]` (tool names only) — convert `ToolDefinition[]` to names via `.map(t => t.name)`
+  - Mock `StreamServiceInterface` in tests using an async generator function: `async function*() { for (const e of events) yield e; }`
+  - XO `@typescript-eslint/naming-convention` enforces `strictCamelCase` on object literal properties — add `// eslint-disable-next-line @typescript-eslint/naming-convention` before snake_case properties like `tool_call_id`, `tool_calls`, `thread_id`
 ---
