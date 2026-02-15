@@ -17,6 +17,7 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - Zod v4 `z.record()` requires TWO args: `z.record(z.string(), valueSchema)` — single-arg form throws
 - Schema naming convention: `<name>Schema` (camelCase) for Zod schemas, `<Name>` (PascalCase) for inferred types
 - Import schemas from `../core/schemas.js` in test files (ESM `.js` extension required)
+- XO rejects `as Type` casts — use `const x: Type = { ... }` instead (`@typescript-eslint/consistent-type-assertions`)
 ---
 
 ## 2026-02-14 - US-001
@@ -39,4 +40,14 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - `z.discriminatedUnion('type', [...])` works in Zod v4 and provides descriptive error messages for mismatched types
   - All types are derived via `z.infer<typeof schema>` — no manual type duplication
   - Created `source/core/` directory for the first time — future stories will add more files here
+---
+
+## 2026-02-14 - US-003
+- What was implemented: Created `source/core/middleware.ts` with composable middleware system (Middleware type + createMiddlewareStack() factory), plus `source/__tests__/core-middleware.test.ts` with 27 comprehensive tests
+- Files changed: source/core/middleware.ts (new), source/__tests__/core-middleware.test.ts (new)
+- **Learnings for future iterations:**
+  - XO linter rejects `as Type` casts — use `const x: Type = { ... }` pattern instead (`@typescript-eslint/consistent-type-assertions`)
+  - `no-await-in-loop` eslint rule needs to be disabled with inline comments when await-in-loop is intentional (sequential middleware execution)
+  - Import types from schemas using `type` keyword: `import { type AgentEvent, ... } from './schemas.js'`
+  - Test helpers (makeState, makeToolCall, etc.) are useful patterns for building valid typed test fixtures
 ---
