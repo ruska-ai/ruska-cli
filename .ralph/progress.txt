@@ -24,6 +24,7 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - XO `unicorn/numeric-separators-style` rejects separators with invalid group length (e.g., `1_000`) — use plain numbers (e.g., `1000`) for small values
 - XO `@typescript-eslint/member-ordering` requires properties before methods in type definitions — put `readonly length: number` before method signatures
 - TypeScript strict mode: array index access may be `undefined` — use non-null assertion `arr[0]!` when length is already asserted
+- XO `capitalized-comments` rule requires inline comments to start with an uppercase letter
 ---
 
 ## 2026-02-14 - US-001
@@ -90,4 +91,16 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - Thread type uses `readonly length: number` getter — declared first in type per member-ordering rule
   - `events()` returns a shallow copy (`[...log]`) to prevent external mutation of the internal log
   - `deserializeThread` re-validates all events, ensuring data integrity on hydration
+---
+
+## 2026-02-14 - US-007
+- What was implemented: Created `source/core/context.ts` with `buildContext()` and `estimateTokens()` for building model context windows from event logs, plus `source/__tests__/core-context.test.ts` with 20 comprehensive tests
+- Files changed: source/core/context.ts (new), source/__tests__/core-context.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `capitalized-comments` rule requires all inline comments to start with an uppercase letter — use `// Skip ...` not `// skip ...`
+  - `buildContext` maps events to messages via switch on discriminated union type — only `user_input`, `model_response`, `tool_result`, and `error` events produce messages
+  - Error events are formatted as user-role messages with `[Agent Error]` prefix using `formatForContext` from errors module — this enables LLM self-healing
+  - Tail windowing via `maxMessages` slices messages BEFORE prepending system prompt — system prompt is always first regardless of windowing
+  - `estimateTokens` uses ~4 chars/token heuristic with overhead for role and structure — simple and sufficient for windowing decisions
+  - Pure function modules importing from sibling core modules (schemas + errors) work cleanly with no lint friction
 ---
