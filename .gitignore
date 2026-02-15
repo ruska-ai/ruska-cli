@@ -17,3 +17,6 @@ progress.txt
 # Defensive patterns
 **/node_modules/
 **/.next/
+**/node_modules
+**/dist
+**/.wortrees
