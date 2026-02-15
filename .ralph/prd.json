@@ -179,7 +179,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Depends on US-002 for HumanContactRequest schema, US-008 for ToolDefinition"
     },
     {

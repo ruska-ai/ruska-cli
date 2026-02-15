@@ -129,3 +129,13 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - The executor extracts args safely with `String(args['command'] ?? '')` and conditional undefined checks for optional params
   - `registerBashTool(registry)` is a one-liner convenience that pairs the definition with the executor
 ---
+
+## 2026-02-14 - US-010
+- What was implemented: Created `source/core/human.ts` with `humanContactToolDefinition`, `parseHumanContactArgs()`, and `HumanContactHandler` type for modeling human interaction as a structured tool, plus `source/__tests__/core-human.test.ts` with 15 comprehensive tests
+- Files changed: source/core/human.ts (new), source/__tests__/core-human.test.ts (new)
+- **Learnings for future iterations:**
+  - Human contact tool follows the same pattern as bash-tool: definition + parser + type export
+  - `parseHumanContactArgs` delegates directly to `humanContactRequestSchema.parse()` — no wrapper logic needed since the schema already validates urgency enum and optional fields
+  - TypeScript strict mode: iterating over `['low', 'medium', 'high']` infers `string` type — use `as const` to preserve literal union type for enum comparisons
+  - Simple modules with pure functions and type exports have zero XO lint friction
+---
