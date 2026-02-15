@@ -30,6 +30,8 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - XO `max-depth` limits nesting to 4 levels — extract deeply nested logic into helper functions
 - XO `unicorn/prefer-switch` triggers when 3+ else-if branches compare the same discriminant — use switch instead
 - Mock `StreamServiceInterface` in tests using async generator: `async function*() { for (const e of events) yield e; }`
+- XO `max-params` limits functions to 4 parameters — group 5+ params into an options/input object
+- `eslint-disable-next-line no-await-in-loop` only applies inside loop bodies — adding it outside a loop triggers `eslint-comments/no-unused-disable`
 ---
 
 ## 2026-02-14 - US-001
@@ -155,4 +157,17 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - `StreamRequest.tools` is `string[]` (tool names only) — convert `ToolDefinition[]` to names via `.map(t => t.name)`
   - Mock `StreamServiceInterface` in tests using an async generator function: `async function*() { for (const e of events) yield e; }`
   - XO `@typescript-eslint/naming-convention` enforces `strictCamelCase` on object literal properties — add `// eslint-disable-next-line @typescript-eslint/naming-convention` before snake_case properties like `tool_call_id`, `tool_calls`, `thread_id`
+---
+
+## 2026-02-14 - US-012
+- What was implemented: Created `source/core/agent.ts` with `initialState()`, `reduce()`, `nextAction()`, and `runAgent()` implementing the agent loop as a stateless reducer with imperative loop driver, plus `source/__tests__/core-agent.test.ts` with 38 comprehensive tests
+- Files changed: source/core/agent.ts (new), source/__tests__/core-agent.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `max-params` rule limits functions to 4 parameters — group 5+ params into a typed input/options object (e.g., `RunAgentInput`, `ModelCallInput`)
+  - `eslint-disable-next-line no-await-in-loop` must only appear inside loop bodies — placing it outside a `while` loop triggers `eslint-comments/no-unused-disable`
+  - The reducer pattern works well for agent state: `reduce()` is pure (no side effects), `nextAction()` determines intent, and `runAgent()` is the imperative driver with side effects
+  - `findPendingToolCall` walks backwards through events to find the most recent `model_response`, then checks which tool calls lack corresponding `tool_result` events
+  - Loop guard (`maxLoop`) prevents infinite loops — set to `(maxIterations + maxErrors + 1) * 10` as a generous upper bound
+  - `handleError` creates `CompactError` via `compactify()` which sets `recoverable` based on attempt vs maxAttempts — this drives whether `reduce()` keeps `running` or transitions to `error`
+  - Middleware hooks are called at appropriate points: `runOnEvent` after state transitions, `runBeforeModel` before model invocation, `runBeforeToolExecution` before tool execution (can skip), `runAfterToolExecution` after tool execution, `runOnError` on errors
 ---
