@@ -1,0 +1,173 @@
+# Ralph Progress Log
+Started: Sat Feb 14 19:14:28 MST 2026
+---
+
+## Codebase Patterns
+- Build command: `npm run build` (runs `tsc`)
+- Test command: `npm run test:unit` (runs `npm run build && ava`)
+- Lint command: `npm run lint` (runs `xo`)
+- Test files go in `source/__tests__/` and are compiled to `dist/__tests__/`
+- AVA test runner picks up `dist/__tests__/**/*.test.js`
+- Project uses ESM (`"type": "module"` in package.json)
+- Zod v4.x installed (^4.3.6) - uses `import {z} from 'zod'`
+- Commit message format: `feat: [Story ID] - [Story Title]`
+- The `dist/` directory is NOT gitignored — don't commit it
+- The Makefile has a pre-existing change (not from ralph) — leave it alone
+- XO linter enforces `strictCamelCase` for variable names — use `coreMessageSchema` not `CoreMessageSchema`
+- Zod v4 `z.record()` requires TWO args: `z.record(z.string(), valueSchema)` — single-arg form throws
+- Schema naming convention: `<name>Schema` (camelCase) for Zod schemas, `<Name>` (PascalCase) for inferred types
+- Import schemas from `../core/schemas.js` in test files (ESM `.js` extension required)
+- XO rejects `as Type` casts — use `const x: Type = { ... }` instead (`@typescript-eslint/consistent-type-assertions`)
+- `@sindresorhus/tsconfig` targets ES2020 — `replaceAll` (ES2021) and `Object.hasOwn` (ES2022) are not available; use `replace` with `/g` and `in` operator instead
+- XO `unicorn/prefer-string-replace-all` conflicts with ES2020 target — disable with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
+- XO `unicorn/better-regex` simplifies escaped braces in regex: use `/{{(\w+)}}/g` not `/\{\{(\w+)\}\}/g`
+- XO `unicorn/numeric-separators-style` rejects separators with invalid group length (e.g., `1_000`) — use plain numbers (e.g., `1000`) for small values
+- XO `@typescript-eslint/member-ordering` requires properties before methods in type definitions — put `readonly length: number` before method signatures
+- TypeScript strict mode: array index access may be `undefined` — use non-null assertion `arr[0]!` when length is already asserted
+- XO `capitalized-comments` rule requires inline comments to start with an uppercase letter
+- XO `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
+- XO `import/order` requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`)
+- XO `max-depth` limits nesting to 4 levels — extract deeply nested logic into helper functions
+- XO `unicorn/prefer-switch` triggers when 3+ else-if branches compare the same discriminant — use switch instead
+- Mock `StreamServiceInterface` in tests using async generator: `async function*() { for (const e of events) yield e; }`
+- XO `max-params` limits functions to 4 parameters — group 5+ params into an options/input object
+- `eslint-disable-next-line no-await-in-loop` only applies inside loop bodies — adding it outside a loop triggers `eslint-comments/no-unused-disable`
+---
+
+## 2026-02-14 - US-001
+- What was implemented: Added zod as a production dependency
+- Files changed: package.json, package-lock.json
+- **Learnings for future iterations:**
+  - `npm install zod` installs v4.x by default (^4.3.6 as of Feb 2026)
+  - zod correctly lands in `dependencies` (not `devDependencies`) with plain `npm install zod`
+  - Build passes cleanly with no additional config needed for zod
+  - `dist/` directory is not gitignored — be careful not to stage it
+---
+
+## 2026-02-14 - US-002
+- What was implemented: Created `source/core/schemas.ts` with Zod schemas as single source of truth for all agent types, plus `source/__tests__/core-schemas.test.ts` with 47 comprehensive tests
+- Files changed: source/core/schemas.ts (new), source/__tests__/core-schemas.test.ts (new)
+- **Learnings for future iterations:**
+  - XO linter enforces `strictCamelCase` for exported `const` variables — PascalCase schema names like `CoreMessageSchema` will fail lint; must use `coreMessageSchema`
+  - Zod v4 `z.record()` requires two args: key schema and value schema (e.g., `z.record(z.string(), z.unknown())`) — the single-arg form from Zod v3 does not work
+  - `z.infer` is a type-level utility — it's not available at runtime (no `typeof z.infer` — that's expected)
+  - `z.discriminatedUnion('type', [...])` works in Zod v4 and provides descriptive error messages for mismatched types
+  - All types are derived via `z.infer<typeof schema>` — no manual type duplication
+  - Created `source/core/` directory for the first time — future stories will add more files here
+---
+
+## 2026-02-14 - US-003
+- What was implemented: Created `source/core/middleware.ts` with composable middleware system (Middleware type + createMiddlewareStack() factory), plus `source/__tests__/core-middleware.test.ts` with 27 comprehensive tests
+- Files changed: source/core/middleware.ts (new), source/__tests__/core-middleware.test.ts (new)
+- **Learnings for future iterations:**
+  - XO linter rejects `as Type` casts — use `const x: Type = { ... }` pattern instead (`@typescript-eslint/consistent-type-assertions`)
+  - `no-await-in-loop` eslint rule needs to be disabled with inline comments when await-in-loop is intentional (sequential middleware execution)
+  - Import types from schemas using `type` keyword: `import { type AgentEvent, ... } from './schemas.js'`
+  - Test helpers (makeState, makeToolCall, etc.) are useful patterns for building valid typed test fixtures
+---
+
+## 2026-02-14 - US-004
+- What was implemented: Created `source/core/errors.ts` with pure functions (compactify, isRecoverable, formatForContext) for normalized error handling with retry tracking, plus `source/__tests__/core-errors.test.ts` with 20 comprehensive tests
+- Files changed: source/core/errors.ts (new), source/__tests__/core-errors.test.ts (new)
+- **Learnings for future iterations:**
+  - Pure functions with no class overhead work well for error utilities — no need for a class-based approach
+  - `Object.assign(new Error('msg'), {code: 'ERR'})` is the pattern for creating Error objects with extra properties in tests
+  - CompactError `code` field is optional — use spread `...(code ? {code} : {})` to conditionally include it
+  - `formatForContext` uses pipe-delimited format for terse LLM-readable error strings
+  - Error module has no XO lint issues — pure functions with type imports are clean
+---
+
+## 2026-02-14 - US-005
+- What was implemented: Created `source/core/prompt.ts` with pure functions (renderPrompt, createPromptTemplate, renderTemplate) for prompt-as-code with variable substitution, plus `source/__tests__/core-prompt.test.ts` with 13 comprehensive tests
+- Files changed: source/core/prompt.ts (new), source/__tests__/core-prompt.test.ts (new)
+- **Learnings for future iterations:**
+  - `@sindresorhus/tsconfig` targets ES2020 lib — `String.replaceAll` is not available (ES2021), use `String.replace` with `/g` flag instead
+  - `Object.hasOwn` is ES2022 — use `key in obj` as the ES2020-compatible alternative
+  - XO `unicorn/prefer-string-replace-all` rule conflicts with ES2020 target — suppress with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
+  - XO `unicorn/better-regex` simplifies escaped braces: `/{{(\w+)}}/g` is preferred over `/\{\{(\w+)\}\}/g`
+  - Pure function modules with `type` imports from schemas are the cleanest pattern — no lint issues beyond ES target mismatches
+---
+
+## 2026-02-14 - US-006
+- What was implemented: Created `source/core/thread.ts` with `createThread()` factory and `deserializeThread()` hydrator for an append-only event log, plus `source/__tests__/core-thread.test.ts` with 18 comprehensive tests
+- Files changed: source/core/thread.ts (new), source/__tests__/core-thread.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `unicorn/numeric-separators-style` rejects separators with invalid group lengths like `1_000` — use plain numbers for small values
+  - XO `@typescript-eslint/member-ordering` requires properties/fields before method definitions in type declarations
+  - TypeScript strict mode treats array index access as possibly `undefined` — use non-null assertion `arr[0]!` after asserting length
+  - Thread type uses `readonly length: number` getter — declared first in type per member-ordering rule
+  - `events()` returns a shallow copy (`[...log]`) to prevent external mutation of the internal log
+  - `deserializeThread` re-validates all events, ensuring data integrity on hydration
+---
+
+## 2026-02-14 - US-007
+- What was implemented: Created `source/core/context.ts` with `buildContext()` and `estimateTokens()` for building model context windows from event logs, plus `source/__tests__/core-context.test.ts` with 20 comprehensive tests
+- Files changed: source/core/context.ts (new), source/__tests__/core-context.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `capitalized-comments` rule requires all inline comments to start with an uppercase letter — use `// Skip ...` not `// skip ...`
+  - `buildContext` maps events to messages via switch on discriminated union type — only `user_input`, `model_response`, `tool_result`, and `error` events produce messages
+  - Error events are formatted as user-role messages with `[Agent Error]` prefix using `formatForContext` from errors module — this enables LLM self-healing
+  - Tail windowing via `maxMessages` slices messages BEFORE prepending system prompt — system prompt is always first regardless of windowing
+  - `estimateTokens` uses ~4 chars/token heuristic with overhead for role and structure — simple and sufficient for windowing decisions
+  - Pure function modules importing from sibling core modules (schemas + errors) work cleanly with no lint friction
+---
+
+## 2026-02-14 - US-008
+- What was implemented: Created `source/core/tool.ts` with `createToolRegistry()` factory and `defineTool()` convenience builder implementing the 3-step structured output pattern, plus `source/__tests__/core-tool.test.ts` with 17 comprehensive tests
+- Files changed: source/core/tool.ts (new), source/__tests__/core-tool.test.ts (new)
+- **Learnings for future iterations:**
+  - The `no-await-in-loop` eslint rule does NOT trigger for a single `await` inside a try/catch — don't add unnecessary disable comments
+  - `no-throw-literal` rule doesn't apply to template `throw 'string'` in XO — only `@typescript-eslint/only-throw-error` applies; don't add redundant disable comments
+  - `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
+  - ToolRegistry uses `Map<string, {definition, executor}>` internally — `definitions()` returns a copy via `[...tools.values()].map()`
+  - Unknown tool calls return `ToolResult` with `isError: true` rather than throwing — keeps the tool interface consistent
+  - `defineTool()` validates via `toolDefinitionSchema.parse()` immediately on creation — catches malformed definitions early
+---
+
+## 2026-02-14 - US-009
+- What was implemented: Created `source/core/bash-tool.ts` with `bashToolDefinition`, `createBashExecutor()`, and `registerBashTool()` that delegate to the existing `lib/local-tools/bash-executor.ts` infrastructure, plus `source/__tests__/core-bash-tool.test.ts` with 11 comprehensive tests
+- Files changed: source/core/bash-tool.ts (new), source/__tests__/core-bash-tool.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `import/order` rule requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`) — order by path depth
+  - Wrapping existing infrastructure (executeBash + formatResultForLlm) is straightforward — no need to re-implement validation logic
+  - Tool definition parameters without `required: true` are treated as optional — only `command` needs `required: true`
+  - The executor extracts args safely with `String(args['command'] ?? '')` and conditional undefined checks for optional params
+  - `registerBashTool(registry)` is a one-liner convenience that pairs the definition with the executor
+---
+
+## 2026-02-14 - US-010
+- What was implemented: Created `source/core/human.ts` with `humanContactToolDefinition`, `parseHumanContactArgs()`, and `HumanContactHandler` type for modeling human interaction as a structured tool, plus `source/__tests__/core-human.test.ts` with 15 comprehensive tests
+- Files changed: source/core/human.ts (new), source/__tests__/core-human.test.ts (new)
+- **Learnings for future iterations:**
+  - Human contact tool follows the same pattern as bash-tool: definition + parser + type export
+  - `parseHumanContactArgs` delegates directly to `humanContactRequestSchema.parse()` — no wrapper logic needed since the schema already validates urgency enum and optional fields
+  - TypeScript strict mode: iterating over `['low', 'medium', 'high']` infers `string` type — use `as const` to preserve literal union type for enum comparisons
+  - Simple modules with pure functions and type exports have zero XO lint friction
+---
+
+## 2026-02-14 - US-011
+- What was implemented: Created `source/core/model.ts` with `ModelInterface` type, `createStreamModel()` factory, and conversion helpers (`coreToStreamMessage`, `streamToolCallsToCoreToolCalls`) that bridge between core schemas and the existing `StreamService` infrastructure, plus `source/__tests__/core-model.test.ts` with 19 comprehensive tests
+- Files changed: source/core/model.ts (new), source/__tests__/core-model.test.ts (new)
+- **Learnings for future iterations:**
+  - After checking `msg.role === 'tool'` in an if-branch, TypeScript narrows the remaining roles automatically — no `as` cast needed for `'user' | 'assistant' | 'system'`
+  - XO `unicorn/prefer-switch` rule triggers when 3+ `else-if` branches compare the same discriminant — refactor to `switch`
+  - XO `max-depth` rule limits nesting to 4 levels — extract nested logic (e.g., content block text extraction) into helper functions
+  - `MessagePayload.content` is `string | ContentBlock[] | undefined` — handle all three branches explicitly
+  - Stream tool_calls format (`{id, name, args}`) is identical to core `ToolCall` schema — conversion is a simple map with no transformation needed
+  - `StreamRequest.tools` is `string[]` (tool names only) — convert `ToolDefinition[]` to names via `.map(t => t.name)`
+  - Mock `StreamServiceInterface` in tests using an async generator function: `async function*() { for (const e of events) yield e; }`
+  - XO `@typescript-eslint/naming-convention` enforces `strictCamelCase` on object literal properties — add `// eslint-disable-next-line @typescript-eslint/naming-convention` before snake_case properties like `tool_call_id`, `tool_calls`, `thread_id`
+---
+
+## 2026-02-14 - US-012
+- What was implemented: Created `source/core/agent.ts` with `initialState()`, `reduce()`, `nextAction()`, and `runAgent()` implementing the agent loop as a stateless reducer with imperative loop driver, plus `source/__tests__/core-agent.test.ts` with 38 comprehensive tests
+- Files changed: source/core/agent.ts (new), source/__tests__/core-agent.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `max-params` rule limits functions to 4 parameters — group 5+ params into a typed input/options object (e.g., `RunAgentInput`, `ModelCallInput`)
+  - `eslint-disable-next-line no-await-in-loop` must only appear inside loop bodies — placing it outside a `while` loop triggers `eslint-comments/no-unused-disable`
+  - The reducer pattern works well for agent state: `reduce()` is pure (no side effects), `nextAction()` determines intent, and `runAgent()` is the imperative driver with side effects
+  - `findPendingToolCall` walks backwards through events to find the most recent `model_response`, then checks which tool calls lack corresponding `tool_result` events
+  - Loop guard (`maxLoop`) prevents infinite loops — set to `(maxIterations + maxErrors + 1) * 10` as a generous upper bound
+  - `handleError` creates `CompactError` via `compactify()` which sets `recoverable` based on attempt vs maxAttempts — this drives whether `reduce()` keeps `running` or transitions to `error`
+  - Middleware hooks are called at appropriate points: `runOnEvent` after state transitions, `runBeforeModel` before model invocation, `runBeforeToolExecution` before tool execution (can skip), `runAfterToolExecution` after tool execution, `runOnError` on errors
+---
