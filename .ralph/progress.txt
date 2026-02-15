@@ -18,6 +18,9 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - Schema naming convention: `<name>Schema` (camelCase) for Zod schemas, `<Name>` (PascalCase) for inferred types
 - Import schemas from `../core/schemas.js` in test files (ESM `.js` extension required)
 - XO rejects `as Type` casts — use `const x: Type = { ... }` instead (`@typescript-eslint/consistent-type-assertions`)
+- `@sindresorhus/tsconfig` targets ES2020 — `replaceAll` (ES2021) and `Object.hasOwn` (ES2022) are not available; use `replace` with `/g` and `in` operator instead
+- XO `unicorn/prefer-string-replace-all` conflicts with ES2020 target — disable with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
+- XO `unicorn/better-regex` simplifies escaped braces in regex: use `/{{(\w+)}}/g` not `/\{\{(\w+)\}\}/g`
 ---
 
 ## 2026-02-14 - US-001
@@ -61,4 +64,15 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - CompactError `code` field is optional — use spread `...(code ? {code} : {})` to conditionally include it
   - `formatForContext` uses pipe-delimited format for terse LLM-readable error strings
   - Error module has no XO lint issues — pure functions with type imports are clean
+---
+
+## 2026-02-14 - US-005
+- What was implemented: Created `source/core/prompt.ts` with pure functions (renderPrompt, createPromptTemplate, renderTemplate) for prompt-as-code with variable substitution, plus `source/__tests__/core-prompt.test.ts` with 13 comprehensive tests
+- Files changed: source/core/prompt.ts (new), source/__tests__/core-prompt.test.ts (new)
+- **Learnings for future iterations:**
+  - `@sindresorhus/tsconfig` targets ES2020 lib — `String.replaceAll` is not available (ES2021), use `String.replace` with `/g` flag instead
+  - `Object.hasOwn` is ES2022 — use `key in obj` as the ES2020-compatible alternative
+  - XO `unicorn/prefer-string-replace-all` rule conflicts with ES2020 target — suppress with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
+  - XO `unicorn/better-regex` simplifies escaped braces: `/{{(\w+)}}/g` is preferred over `/\{\{(\w+)\}\}/g`
+  - Pure function modules with `type` imports from schemas are the cleanest pattern — no lint issues beyond ES target mismatches
 ---
