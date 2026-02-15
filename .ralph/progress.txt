@@ -51,3 +51,14 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - Import types from schemas using `type` keyword: `import { type AgentEvent, ... } from './schemas.js'`
   - Test helpers (makeState, makeToolCall, etc.) are useful patterns for building valid typed test fixtures
 ---
+
+## 2026-02-14 - US-004
+- What was implemented: Created `source/core/errors.ts` with pure functions (compactify, isRecoverable, formatForContext) for normalized error handling with retry tracking, plus `source/__tests__/core-errors.test.ts` with 20 comprehensive tests
+- Files changed: source/core/errors.ts (new), source/__tests__/core-errors.test.ts (new)
+- **Learnings for future iterations:**
+  - Pure functions with no class overhead work well for error utilities — no need for a class-based approach
+  - `Object.assign(new Error('msg'), {code: 'ERR'})` is the pattern for creating Error objects with extra properties in tests
+  - CompactError `code` field is optional — use spread `...(code ? {code} : {})` to conditionally include it
+  - `formatForContext` uses pipe-delimited format for terse LLM-readable error strings
+  - Error module has no XO lint issues — pure functions with type imports are clean
+---
