@@ -1,0 +1,42 @@
+# Ralph Progress Log
+Started: Sat Feb 14 19:14:28 MST 2026
+---
+
+## Codebase Patterns
+- Build command: `npm run build` (runs `tsc`)
+- Test command: `npm run test:unit` (runs `npm run build && ava`)
+- Lint command: `npm run lint` (runs `xo`)
+- Test files go in `source/__tests__/` and are compiled to `dist/__tests__/`
+- AVA test runner picks up `dist/__tests__/**/*.test.js`
+- Project uses ESM (`"type": "module"` in package.json)
+- Zod v4.x installed (^4.3.6) - uses `import {z} from 'zod'`
+- Commit message format: `feat: [Story ID] - [Story Title]`
+- The `dist/` directory is NOT gitignored — don't commit it
+- The Makefile has a pre-existing change (not from ralph) — leave it alone
+- XO linter enforces `strictCamelCase` for variable names — use `coreMessageSchema` not `CoreMessageSchema`
+- Zod v4 `z.record()` requires TWO args: `z.record(z.string(), valueSchema)` — single-arg form throws
+- Schema naming convention: `<name>Schema` (camelCase) for Zod schemas, `<Name>` (PascalCase) for inferred types
+- Import schemas from `../core/schemas.js` in test files (ESM `.js` extension required)
+---
+
+## 2026-02-14 - US-001
+- What was implemented: Added zod as a production dependency
+- Files changed: package.json, package-lock.json
+- **Learnings for future iterations:**
+  - `npm install zod` installs v4.x by default (^4.3.6 as of Feb 2026)
+  - zod correctly lands in `dependencies` (not `devDependencies`) with plain `npm install zod`
+  - Build passes cleanly with no additional config needed for zod
+  - `dist/` directory is not gitignored — be careful not to stage it
+---
+
+## 2026-02-14 - US-002
+- What was implemented: Created `source/core/schemas.ts` with Zod schemas as single source of truth for all agent types, plus `source/__tests__/core-schemas.test.ts` with 47 comprehensive tests
+- Files changed: source/core/schemas.ts (new), source/__tests__/core-schemas.test.ts (new)
+- **Learnings for future iterations:**
+  - XO linter enforces `strictCamelCase` for exported `const` variables — PascalCase schema names like `CoreMessageSchema` will fail lint; must use `coreMessageSchema`
+  - Zod v4 `z.record()` requires two args: key schema and value schema (e.g., `z.record(z.string(), z.unknown())`) — the single-arg form from Zod v3 does not work
+  - `z.infer` is a type-level utility — it's not available at runtime (no `typeof z.infer` — that's expected)
+  - `z.discriminatedUnion('type', [...])` works in Zod v4 and provides descriptive error messages for mismatched types
+  - All types are derived via `z.infer<typeof schema>` — no manual type duplication
+  - Created `source/core/` directory for the first time — future stories will add more files here
+---

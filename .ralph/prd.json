@@ -1,0 +1,263 @@
+{
+  "project": "@ruska/cli",
+  "branchName": "feat/63-twelve-factor-agent",
+  "description": "12-Factor Agent Core Components - Additive source/core/ module implementing agent primitives (model, tools, middleware, event log, agent loop) based on 12-factor-agents design principles",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Zod dependency",
+      "description": "As a developer, I need the Zod library installed so that core schemas can use it for runtime validation.",
+      "acceptanceCriteria": [
+        "Run npm install zod",
+        "zod appears in dependencies (not devDependencies) in package.json",
+        "npm run build compiles without errors",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define Core Schemas & Types",
+      "description": "As a developer, I want Zod schemas as the single source of truth for all agent types so that runtime validation and TypeScript types stay in sync automatically.",
+      "acceptanceCriteria": [
+        "Create source/core/schemas.ts with Zod schemas for: CoreMessage, ToolCall, ModelResult, PromptTemplate, ToolParameterSchema, ToolDefinition, ToolResult, AgentEvent (discriminated union), HumanContactRequest, CompactError, AgentState, AgentConfig, AgentAction",
+        "All TypeScript types derived via z.infer<> -- no manually duplicated type definitions",
+        "Export validate*() (strict) and safeValidate*() (safe parse) helpers for each schema",
+        "AgentEvent uses z.discriminatedUnion('type', [...]) to distinguish event types",
+        "CoreMessage supports system, user, assistant, and tool roles",
+        "Invalid data is rejected with descriptive Zod error messages",
+        "Create source/__tests__/core-schemas.test.ts with tests for parse, safeParse, invalid rejection, discriminated union",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Pattern reference: source/types/stream.ts:StreamEvent (line 150) for discriminated union pattern, but with Zod runtime validation"
+    },
+    {
+      "id": "US-003",
+      "title": "Build Middleware System",
+      "description": "As a developer, I want a composable middleware system with typed hooks so that I can extend agent behavior without modifying core logic.",
+      "acceptanceCriteria": [
+        "Create source/core/middleware.ts exporting Middleware type and createMiddlewareStack() factory",
+        "Middleware type has named hooks: onEvent, onError, beforeModel, beforePrompt, beforeToolExecution, afterToolExecution -- all optional",
+        "MiddlewareStack exposes use(middleware) for registration and run*() methods for each hook",
+        "Middlewares execute in registration order",
+        "beforeToolExecution can return false to skip execution",
+        "All hooks support async (return Promise)",
+        "Stack with no middleware is a no-op passthrough",
+        "Create source/__tests__/core-middleware.test.ts with tests for registration, execution order, each hook type, async hooks, no-op passthrough",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Depends on US-002 for AgentEvent, AgentState, CoreMessage, ToolCall, ToolResult, CompactError types"
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Compact Errors",
+      "description": "As a developer, I want normalized error handling with retry tracking so that errors are consistently formatted for LLM context and self-healing.",
+      "acceptanceCriteria": [
+        "Create source/core/errors.ts with pure functions: compactify(error, attempt, maxAttempts), isRecoverable(error), formatForContext(error)",
+        "compactify normalizes Error, string, and unknown inputs into CompactError shape",
+        "isRecoverable checks remaining retries",
+        "formatForContext produces a terse string suitable for LLM context injection",
+        "Create source/__tests__/core-errors.test.ts with tests for Error/string/unknown normalization, recoverability, formatting",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Pattern reference: source/lib/output/error-handler.ts (classifyError approach). Depends on US-002 for CompactError schema"
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Prompt Manager",
+      "description": "As a developer, I want prompt-as-code with variable substitution so that prompts are versioned, named, and validated at render time.",
+      "acceptanceCriteria": [
+        "Create source/core/prompt.ts with pure functions: renderPrompt(template, variables), createPromptTemplate(name, version, template), renderTemplate(promptTemplate, variables)",
+        "renderPrompt performs {{variable}} substitution",
+        "createPromptTemplate extracts variable names from the template string",
+        "renderTemplate validates all required variables are provided before rendering",
+        "Missing variables throw a descriptive error",
+        "Create source/__tests__/core-prompt.test.ts with tests for substitution, missing vars, template creation",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Depends on US-002 for PromptTemplate schema"
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Thread / Event Log",
+      "description": "As a developer, I want an append-only event log as the single source of truth for agent history so that agent state can be reconstructed, serialized, and resumed.",
+      "acceptanceCriteria": [
+        "Create source/core/thread.ts with createThread(initial?) factory and deserializeThread(json) hydrator",
+        "Thread object exposes: append(event), events(), eventsOfType(type), length, serialize()",
+        "Events are validated via AgentEventSchema on append",
+        "serialize() / deserializeThread() roundtrip is lossless",
+        "Create source/__tests__/core-thread.test.ts with tests for append, events, eventsOfType filtering, serialize/deserialize roundtrip",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Factory pattern reference: source/lib/services/stream-service.interface.ts. Depends on US-002 for AgentEvent schema"
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Context Builder",
+      "description": "As a developer, I want to build a model context window from the event log so that the LLM receives a properly formatted, windowed message array with error context for self-healing.",
+      "acceptanceCriteria": [
+        "Create source/core/context.ts with buildContext(events, options?) and estimateTokens(messages)",
+        "buildContext reconstructs CoreMessage[] from AgentEvent[]",
+        "System prompt is prepended as first message",
+        "maxMessages option applies tail windowing (preserves system messages + most recent N messages)",
+        "Error events are formatted into context for self-healing",
+        "estimateTokens provides approximate token count",
+        "Create source/__tests__/core-context.test.ts with tests for empty events, system prepend, message extraction, windowing, token estimation",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Depends on US-002 for CoreMessage and AgentEvent schemas, US-004 for formatForContext"
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Tool Registry",
+      "description": "As a developer, I want a tool registry implementing the 3-step structured output pattern so that tools are validated, executed safely, and errors are captured.",
+      "acceptanceCriteria": [
+        "Create source/core/tool.ts with createToolRegistry() factory and defineTool() convenience builder",
+        "ToolRegistry exposes: register(definition, executor), definitions(), execute(toolCall), has(name)",
+        "ToolExecutor type: (args: Record<string, unknown>) => Promise<string>",
+        "Tool args validated via ToolCallSchema before execution",
+        "Executor errors are caught and returned as ToolResult with isError: true",
+        "register validates ToolDefinitionSchema to catch malformed definitions early",
+        "Create source/__tests__/core-tool.test.ts with tests for register, execute success/error/unknown, defineTool",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Tool name conventions reference: source/lib/tools.ts. Depends on US-002 for ToolCall, ToolDefinition, ToolResult schemas"
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Bash Tool",
+      "description": "As a developer, I want a bash_tool registered in the core tool system that delegates to the existing lib/local-tools/ infrastructure.",
+      "acceptanceCriteria": [
+        "Create source/core/bash-tool.ts with bashToolDefinition, createBashExecutor(), and registerBashTool(registry)",
+        "bashToolDefinition has parameters: command (required string), cwd (optional string), timeout (optional number)",
+        "createBashExecutor() wraps executeBash() from source/lib/local-tools/bash-executor.ts",
+        "Executor returns formatResultForLlm() output from source/lib/local-tools/bash-executor.ts",
+        "No duplication of validateCommand() (already called inside executeBash())",
+        "registerBashTool(registry) convenience registers definition + executor in one call",
+        "Create source/__tests__/core-bash-tool.test.ts with tests for definition shape, executor output, registerBashTool convenience",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Reuses source/lib/local-tools/bash-executor.ts (executeBash, formatResultForLlm). Depends on US-008 for ToolRegistry"
+    },
+    {
+      "id": "US-010",
+      "title": "Implement Human Contact Tool",
+      "description": "As a developer, I want human interaction modeled as a structured tool so that the agent can request human input through the standard tool interface.",
+      "acceptanceCriteria": [
+        "Create source/core/human.ts with humanContactToolDefinition, parseHumanContactArgs(args), and HumanContactHandler type",
+        "humanContactToolDefinition is a standard ToolDefinition for contact_human",
+        "parseHumanContactArgs validates LLM output against HumanContactRequestSchema",
+        "HumanContactHandler type: (request: HumanContactRequest) => Promise<string>",
+        "Create source/__tests__/core-human.test.ts with tests for tool definition shape, arg parsing valid/invalid/optional fields",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Depends on US-002 for HumanContactRequest schema, US-008 for ToolDefinition"
+    },
+    {
+      "id": "US-011",
+      "title": "Implement Model Interface",
+      "description": "As a developer, I want an LLM abstraction layer so that the agent loop is decoupled from the specific streaming implementation.",
+      "acceptanceCriteria": [
+        "Create source/core/model.ts with ModelInterface type and createStreamModel(config) factory",
+        "ModelInterface: { invoke(messages: CoreMessage[], tools?: ToolDefinition[]): Promise<ModelResult> }",
+        "createStreamModel bridges to existing StreamService (source/lib/services/stream-service.ts)",
+        "Internal helpers convert between CoreMessage and StreamMessage (source/types/stream.ts)",
+        "Internal helpers convert between ToolCall and stream tool_calls format",
+        "Create source/__tests__/core-model.test.ts with tests for ModelInterface contract, message conversion",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Depends on US-002 for CoreMessage, ModelResult, ToolDefinition schemas"
+    },
+    {
+      "id": "US-012",
+      "title": "Implement Agent Loop / Reducer",
+      "description": "As a developer, I want an agent loop implemented as a stateless reducer so that agent behavior is predictable, testable, and composable with middleware.",
+      "acceptanceCriteria": [
+        "Create source/core/agent.ts with initialState(config), reduce(state, event), nextAction(state), and runAgent(input, model, toolRegistry, options)",
+        "initialState creates an idle state validated via AgentConfigSchema",
+        "reduce is a pure function with no side effects -- returns new state from (state, event)",
+        "nextAction determines next step: call_model, execute_tool, contact_human, done, or error",
+        "runAgent is the imperative loop driver that orchestrates model calls, tool execution, and middleware",
+        "RunOptions accepts a MiddlewareStack -- loop calls all middleware hooks at appropriate points",
+        "Model results validated via ModelResultSchema.parse() before processing",
+        "maxIterations enforces small agent scope",
+        "maxErrors with retry guardrails",
+        "Loop terminates on done or error status",
+        "Create source/__tests__/core-agent.test.ts with tests for initialState, reduce for each event type, nextAction for each status, iteration/error limits",
+        "All tests pass: npm run test:unit",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Depends on US-002 (schemas), US-003 (middleware), US-008 (tool registry), US-011 (model interface). This is the centerpiece that ties everything together."
+    },
+    {
+      "id": "US-013",
+      "title": "Create Barrel Export and Final Verification",
+      "description": "As a developer, I want a single entry point for the core module and full verification that everything works together.",
+      "acceptanceCriteria": [
+        "Create source/core/index.ts re-exporting all public API from core modules",
+        "Follow pattern of source/types/index.ts",
+        "All exports are importable from source/core/index.ts",
+        "npm run build compiles all new TypeScript without errors",
+        "npm run lint passes with no new warnings or errors",
+        "npm run test passes (all 11 new test files + existing tests)",
+        "Existing CLI functionality unaffected: npx ruska chat --message 'hello' works",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Depends on all prior stories. Final integration check."
+    },
+    {
+      "id": "US-014",
+      "title": "Write Core Module README",
+      "description": "As a developer, I want a README in source/core/ so that I can quickly understand the module's purpose, architecture, setup, usage, and how to run tests.",
+      "acceptanceCriteria": [
+        "Create source/core/README.md",
+        "Overview section: describes the module's purpose and the 12-factor-agents design principles it implements",
+        "Architecture section: lists each module file (schemas.ts, middleware.ts, errors.ts, prompt.ts, thread.ts, context.ts, tool.ts, bash-tool.ts, human.ts, agent.ts, model.ts) with a one-line description and which factor(s) it addresses",
+        "Setup section: documents the zod dependency requirement and how to install (npm install)",
+        "Usage section: provides code examples for key workflows -- creating an agent config, registering tools, running the agent loop, using middleware",
+        "Testing section: documents how to run tests (npm run test:unit), lists all 11 test files, and describes the TDD approach",
+        "Module Dependency Graph section: shows which modules depend on which",
+        "npm run lint passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Depends on US-013 (barrel export) so all public API is finalized before documenting. Last story -- documents the completed module."
+    }
+  ]
+}
