@@ -162,7 +162,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Reuses source/lib/local-tools/bash-executor.ts (executeBash, formatResultForLlm). Depends on US-008 for ToolRegistry"
     },
     {

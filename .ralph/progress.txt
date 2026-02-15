@@ -26,6 +26,7 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - TypeScript strict mode: array index access may be `undefined` — use non-null assertion `arr[0]!` when length is already asserted
 - XO `capitalized-comments` rule requires inline comments to start with an uppercase letter
 - XO `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
+- XO `import/order` requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`)
 ---
 
 ## 2026-02-14 - US-001
@@ -116,4 +117,15 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - ToolRegistry uses `Map<string, {definition, executor}>` internally — `definitions()` returns a copy via `[...tools.values()].map()`
   - Unknown tool calls return `ToolResult` with `isError: true` rather than throwing — keeps the tool interface consistent
   - `defineTool()` validates via `toolDefinitionSchema.parse()` immediately on creation — catches malformed definitions early
+---
+
+## 2026-02-14 - US-009
+- What was implemented: Created `source/core/bash-tool.ts` with `bashToolDefinition`, `createBashExecutor()`, and `registerBashTool()` that delegate to the existing `lib/local-tools/bash-executor.ts` infrastructure, plus `source/__tests__/core-bash-tool.test.ts` with 11 comprehensive tests
+- Files changed: source/core/bash-tool.ts (new), source/__tests__/core-bash-tool.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `import/order` rule requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`) — order by path depth
+  - Wrapping existing infrastructure (executeBash + formatResultForLlm) is straightforward — no need to re-implement validation logic
+  - Tool definition parameters without `required: true` are treated as optional — only `command` needs `required: true`
+  - The executor extracts args safely with `String(args['command'] ?? '')` and conditional undefined checks for optional params
+  - `registerBashTool(registry)` is a one-liner convenience that pairs the definition with the executor
 ---
