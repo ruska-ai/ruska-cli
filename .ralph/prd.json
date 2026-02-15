@@ -105,7 +105,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Factory pattern reference: source/lib/services/stream-service.interface.ts. Depends on US-002 for AgentEvent schema"
     },
     {

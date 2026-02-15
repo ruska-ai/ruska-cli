@@ -21,6 +21,9 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - `@sindresorhus/tsconfig` targets ES2020 — `replaceAll` (ES2021) and `Object.hasOwn` (ES2022) are not available; use `replace` with `/g` and `in` operator instead
 - XO `unicorn/prefer-string-replace-all` conflicts with ES2020 target — disable with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
 - XO `unicorn/better-regex` simplifies escaped braces in regex: use `/{{(\w+)}}/g` not `/\{\{(\w+)\}\}/g`
+- XO `unicorn/numeric-separators-style` rejects separators with invalid group length (e.g., `1_000`) — use plain numbers (e.g., `1000`) for small values
+- XO `@typescript-eslint/member-ordering` requires properties before methods in type definitions — put `readonly length: number` before method signatures
+- TypeScript strict mode: array index access may be `undefined` — use non-null assertion `arr[0]!` when length is already asserted
 ---
 
 ## 2026-02-14 - US-001
@@ -75,4 +78,16 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - XO `unicorn/prefer-string-replace-all` rule conflicts with ES2020 target — suppress with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
   - XO `unicorn/better-regex` simplifies escaped braces: `/{{(\w+)}}/g` is preferred over `/\{\{(\w+)\}\}/g`
   - Pure function modules with `type` imports from schemas are the cleanest pattern — no lint issues beyond ES target mismatches
+---
+
+## 2026-02-14 - US-006
+- What was implemented: Created `source/core/thread.ts` with `createThread()` factory and `deserializeThread()` hydrator for an append-only event log, plus `source/__tests__/core-thread.test.ts` with 18 comprehensive tests
+- Files changed: source/core/thread.ts (new), source/__tests__/core-thread.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `unicorn/numeric-separators-style` rejects separators with invalid group lengths like `1_000` — use plain numbers for small values
+  - XO `@typescript-eslint/member-ordering` requires properties/fields before method definitions in type declarations
+  - TypeScript strict mode treats array index access as possibly `undefined` — use non-null assertion `arr[0]!` after asserting length
+  - Thread type uses `readonly length: number` getter — declared first in type per member-ordering rule
+  - `events()` returns a shallow copy (`[...log]`) to prevent external mutation of the internal log
+  - `deserializeThread` re-validates all events, ensuring data integrity on hydration
 ---
