@@ -25,6 +25,7 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - XO `@typescript-eslint/member-ordering` requires properties before methods in type definitions — put `readonly length: number` before method signatures
 - TypeScript strict mode: array index access may be `undefined` — use non-null assertion `arr[0]!` when length is already asserted
 - XO `capitalized-comments` rule requires inline comments to start with an uppercase letter
+- XO `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
 ---
 
 ## 2026-02-14 - US-001
@@ -103,4 +104,16 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - Tail windowing via `maxMessages` slices messages BEFORE prepending system prompt — system prompt is always first regardless of windowing
   - `estimateTokens` uses ~4 chars/token heuristic with overhead for role and structure — simple and sufficient for windowing decisions
   - Pure function modules importing from sibling core modules (schemas + errors) work cleanly with no lint friction
+---
+
+## 2026-02-14 - US-008
+- What was implemented: Created `source/core/tool.ts` with `createToolRegistry()` factory and `defineTool()` convenience builder implementing the 3-step structured output pattern, plus `source/__tests__/core-tool.test.ts` with 17 comprehensive tests
+- Files changed: source/core/tool.ts (new), source/__tests__/core-tool.test.ts (new)
+- **Learnings for future iterations:**
+  - The `no-await-in-loop` eslint rule does NOT trigger for a single `await` inside a try/catch — don't add unnecessary disable comments
+  - `no-throw-literal` rule doesn't apply to template `throw 'string'` in XO — only `@typescript-eslint/only-throw-error` applies; don't add redundant disable comments
+  - `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
+  - ToolRegistry uses `Map<string, {definition, executor}>` internally — `definitions()` returns a copy via `[...tools.values()].map()`
+  - Unknown tool calls return `ToolResult` with `isError: true` rather than throwing — keeps the tool interface consistent
+  - `defineTool()` validates via `toolDefinitionSchema.parse()` immediately on creation — catches malformed definitions early
 ---

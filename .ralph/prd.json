@@ -143,7 +143,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Tool name conventions reference: source/lib/tools.ts. Depends on US-002 for ToolCall, ToolDefinition, ToolResult schemas"
     },
     {
