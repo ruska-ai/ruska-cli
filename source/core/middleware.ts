@@ -118,10 +118,7 @@ export function createMiddlewareStack(): MiddlewareStack {
 			for (const mw of middlewares) {
 				if (mw.beforeToolExecution) {
 					// eslint-disable-next-line no-await-in-loop
-					const shouldContinue = await mw.beforeToolExecution(
-						toolCall,
-						state,
-					);
+					const shouldContinue = await mw.beforeToolExecution(toolCall, state);
 					if (!shouldContinue) {
 						return false;
 					}

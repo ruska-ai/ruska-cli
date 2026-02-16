@@ -19,7 +19,10 @@ function main() {
 
 	thread.append({
 		type: 'user_input',
-		message: {role: 'user', content: 'What files are in the current directory?'},
+		message: {
+			role: 'user',
+			content: 'What files are in the current directory?',
+		},
 		timestamp: now,
 	});
 
@@ -46,7 +49,10 @@ function main() {
 
 	thread.append({
 		type: 'model_response',
-		result: {content: 'The directory contains: file1.ts, file2.ts, and README.md', done: true},
+		result: {
+			content: 'The directory contains: file1.ts, file2.ts, and README.md',
+			done: true,
+		},
 		timestamp: now + 4000,
 	});
 
@@ -75,7 +81,11 @@ function main() {
 
 	console.log('\n--- Context Messages ---');
 	for (const msg of context) {
-		console.log(`[${msg.role}] ${msg.content.slice(0, 80)}${msg.content.length > 80 ? '...' : ''}`);
+		console.log(
+			`[${msg.role}] ${msg.content.slice(0, 80)}${
+				msg.content.length > 80 ? '...' : ''
+			}`,
+		);
 	}
 
 	// --- 5. Context with windowing (keep last 3 messages) ---

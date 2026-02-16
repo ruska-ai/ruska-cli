@@ -64,7 +64,7 @@ The 12-Factor Agent Core module (`source/core/`) was built across 12 user storie
 - [ ] Reuse `validateCommand()` and `assessCommandRisk()` from `source/lib/local-tools/security.ts`
 - [ ] Blocked commands (per `validateCommand()`) return `false` (triggers "skipped by middleware" in agent.ts)
 - [ ] Non-blocked commands delegate approval decision to the `ConsentHandler`
-- [ ] Create `source/__tests__/core-bash-consent-middleware.test.ts` with tests for: blocked commands, approved commands, denied commands, non-bash tools passthrough
+- [ ] Create `source/__tests__/core-bash-consent-middleware.test.ts` with tests for: blocked commands, approved commands, denied commands, non-bash tools passthrough, integration with `runAgent` using mock model requesting bash
 - [ ] Modify `source/core/index.ts` — export `createBashConsentMiddleware`, `ConsentHandler`, `ConsentDecision`
 - [ ] `npm run build` compiles without errors
 - [ ] `npm run lint` passes
@@ -188,7 +188,7 @@ The 12-Factor Agent Core module (`source/core/`) was built across 12 user storie
   - `source/core/middleware.ts` — `createMiddlewareStack()` for runner factory
 - **React integration pattern:** The consent handler in P3A uses a Promise that resolves when React state updates (user approves/denies). This bridges the async middleware world with React's render cycle.
 - **Versioning:** Stay in `0.x` until barrel export API is stable. P0=0.2.0, P1*=0.3.0, P2A=0.4.0, P3*=0.5.0.
-- **Test runner:** AVA with tests compiled to `dist/__tests__/`. New test files: `core-agent-stream.test.ts`, `core-bash-consent-middleware.test.ts`, `core-thread-store.test.ts`, `core-runner.test.ts` (4 new test files).
+- **Test runner:** AVA with tests compiled to `dist/__tests__/`. New test files: `core-agent-stream.test.ts`, `core-bash-consent-middleware.test.ts`, `core-thread-store.test.ts`, `core-runner.test.ts` (4 new test files, ~5 new tests total across existing + new).
 - **Linter:** XO with known patterns documented in progress.txt (strictCamelCase, ES2020 target, import order, etc.)
 
 ## Success Metrics

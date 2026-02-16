@@ -1,8 +1,5 @@
 import test from 'ava';
-import {
-	createMiddlewareStack,
-	type Middleware,
-} from '../core/middleware.js';
+import {createMiddlewareStack, type Middleware} from '../core/middleware.js';
 import {
 	type AgentEvent,
 	type AgentState,
@@ -67,7 +64,7 @@ function makeCompactError(overrides?: Partial<CompactError>): CompactError {
 // Registration
 // ---------------------------------------------------------------------------
 
-test('use() registers middleware', (t) => {
+test('use() registers middleware', t => {
 	const stack = createMiddlewareStack();
 	const mw: Middleware = {name: 'test-mw'};
 	// Should not throw
@@ -79,32 +76,32 @@ test('use() registers middleware', (t) => {
 // No-op passthrough (empty stack)
 // ---------------------------------------------------------------------------
 
-test('runOnEvent with no middleware is a no-op', async (t) => {
+test('runOnEvent with no middleware is a no-op', async t => {
 	const stack = createMiddlewareStack();
 	await stack.runOnEvent(makeEvent(), makeState());
 	t.pass();
 });
 
-test('runOnError with no middleware is a no-op', async (t) => {
+test('runOnError with no middleware is a no-op', async t => {
 	const stack = createMiddlewareStack();
 	await stack.runOnError(makeCompactError(), makeState());
 	t.pass();
 });
 
-test('runBeforeModel with no middleware returns messages unchanged', async (t) => {
+test('runBeforeModel with no middleware returns messages unchanged', async t => {
 	const stack = createMiddlewareStack();
 	const messages: CoreMessage[] = [{role: 'user', content: 'hi'}];
 	const result = await stack.runBeforeModel(messages, makeState());
 	t.deepEqual(result, messages);
 });
 
-test('runBeforePrompt with no middleware returns prompt unchanged', async (t) => {
+test('runBeforePrompt with no middleware returns prompt unchanged', async t => {
 	const stack = createMiddlewareStack();
 	const result = await stack.runBeforePrompt('hello', makeState());
 	t.is(result, 'hello');
 });
 
-test('runBeforeToolExecution with no middleware returns true', async (t) => {
+test('runBeforeToolExecution with no middleware returns true', async t => {
 	const stack = createMiddlewareStack();
 	const result = await stack.runBeforeToolExecution(
 		makeToolCall(),
@@ -113,7 +110,7 @@ test('runBeforeToolExecution with no middleware returns true', async (t) => {
 	t.true(result);
 });
 
-test('runAfterToolExecution with no middleware is a no-op', async (t) => {
+test('runAfterToolExecution with no middleware is a no-op', async t => {
 	const stack = createMiddlewareStack();
 	await stack.runAfterToolExecution(
 		makeToolCall(),
@@ -127,7 +124,7 @@ test('runAfterToolExecution with no middleware is a no-op', async (t) => {
 // Execution order
 // ---------------------------------------------------------------------------
 
-test('onEvent hooks execute in registration order', async (t) => {
+test('onEvent hooks execute in registration order', async t => {
 	const stack = createMiddlewareStack();
 	const order: number[] = [];
 
@@ -151,7 +148,7 @@ test('onEvent hooks execute in registration order', async (t) => {
 	t.deepEqual(order, [1, 2, 3]);
 });
 
-test('onError hooks execute in registration order', async (t) => {
+test('onError hooks execute in registration order', async t => {
 	const stack = createMiddlewareStack();
 	const order: number[] = [];
 
@@ -170,7 +167,7 @@ test('onError hooks execute in registration order', async (t) => {
 	t.deepEqual(order, [1, 2]);
 });
 
-test('beforeModel hooks chain in registration order', async (t) => {
+test('beforeModel hooks chain in registration order', async t => {
 	const stack = createMiddlewareStack();
 
 	stack.use({
@@ -195,7 +192,7 @@ test('beforeModel hooks chain in registration order', async (t) => {
 	t.is(result[2]!.content, 'second');
 });
 
-test('beforePrompt hooks chain in registration order', async (t) => {
+test('beforePrompt hooks chain in registration order', async t => {
 	const stack = createMiddlewareStack();
 
 	stack.use({
@@ -213,7 +210,7 @@ test('beforePrompt hooks chain in registration order', async (t) => {
 	t.is(result, 'base [A] [B]');
 });
 
-test('beforeToolExecution hooks execute in order until one returns false', async (t) => {
+test('beforeToolExecution hooks execute in order until one returns false', async t => {
 	const stack = createMiddlewareStack();
 	const order: number[] = [];
 
@@ -244,7 +241,7 @@ test('beforeToolExecution hooks execute in order until one returns false', async
 	t.deepEqual(order, [1, 2]); // Third middleware not reached
 });
 
-test('beforeToolExecution returns true when all middleware return true', async (t) => {
+test('beforeToolExecution returns true when all middleware return true', async t => {
 	const stack = createMiddlewareStack();
 
 	stack.use({
@@ -265,7 +262,7 @@ test('beforeToolExecution returns true when all middleware return true', async (
 	t.true(result);
 });
 
-test('afterToolExecution hooks execute in registration order', async (t) => {
+test('afterToolExecution hooks execute in registration order', async t => {
 	const stack = createMiddlewareStack();
 	const order: number[] = [];
 
@@ -292,7 +289,7 @@ test('afterToolExecution hooks execute in registration order', async (t) => {
 // Each hook type receives correct arguments
 // ---------------------------------------------------------------------------
 
-test('onEvent receives event and state', async (t) => {
+test('onEvent receives event and state', async t => {
 	const stack = createMiddlewareStack();
 	const event = makeEvent();
 	const state = makeState();
@@ -307,7 +304,7 @@ test('onEvent receives event and state', async (t) => {
 	await stack.runOnEvent(event, state);
 });
 
-test('onError receives error and state', async (t) => {
+test('onError receives error and state', async t => {
 	const stack = createMiddlewareStack();
 	const error = makeCompactError();
 	const state = makeState();
@@ -322,7 +319,7 @@ test('onError receives error and state', async (t) => {
 	await stack.runOnError(error, state);
 });
 
-test('beforeModel receives messages and state', async (t) => {
+test('beforeModel receives messages and state', async t => {
 	const stack = createMiddlewareStack();
 	const messages: CoreMessage[] = [{role: 'user', content: 'hi'}];
 	const state = makeState();
@@ -338,7 +335,7 @@ test('beforeModel receives messages and state', async (t) => {
 	await stack.runBeforeModel(messages, state);
 });
 
-test('beforePrompt receives prompt and state', async (t) => {
+test('beforePrompt receives prompt and state', async t => {
 	const stack = createMiddlewareStack();
 	const state = makeState();
 
@@ -353,7 +350,7 @@ test('beforePrompt receives prompt and state', async (t) => {
 	await stack.runBeforePrompt('test prompt', state);
 });
 
-test('beforeToolExecution receives toolCall and state', async (t) => {
+test('beforeToolExecution receives toolCall and state', async t => {
 	const stack = createMiddlewareStack();
 	const toolCall = makeToolCall();
 	const state = makeState();
@@ -369,7 +366,7 @@ test('beforeToolExecution receives toolCall and state', async (t) => {
 	await stack.runBeforeToolExecution(toolCall, state);
 });
 
-test('afterToolExecution receives toolCall, result, and state', async (t) => {
+test('afterToolExecution receives toolCall, result, and state', async t => {
 	const stack = createMiddlewareStack();
 	const toolCall = makeToolCall();
 	const toolResult = makeToolResult();
@@ -390,13 +387,13 @@ test('afterToolExecution receives toolCall, result, and state', async (t) => {
 // Async hooks
 // ---------------------------------------------------------------------------
 
-test('onEvent supports async hooks', async (t) => {
+test('onEvent supports async hooks', async t => {
 	const stack = createMiddlewareStack();
 	let called = false;
 
 	stack.use({
 		async onEvent() {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			called = true;
@@ -407,12 +404,12 @@ test('onEvent supports async hooks', async (t) => {
 	t.true(called);
 });
 
-test('beforeModel supports async hooks', async (t) => {
+test('beforeModel supports async hooks', async t => {
 	const stack = createMiddlewareStack();
 
 	stack.use({
 		async beforeModel(messages) {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			return [...messages, {role: 'system' as const, content: 'async'}];
@@ -427,12 +424,12 @@ test('beforeModel supports async hooks', async (t) => {
 	t.is(result[1]!.content, 'async');
 });
 
-test('beforePrompt supports async hooks', async (t) => {
+test('beforePrompt supports async hooks', async t => {
 	const stack = createMiddlewareStack();
 
 	stack.use({
 		async beforePrompt(prompt) {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			return prompt + ' [async]';
@@ -443,12 +440,12 @@ test('beforePrompt supports async hooks', async (t) => {
 	t.is(result, 'base [async]');
 });
 
-test('beforeToolExecution supports async hooks', async (t) => {
+test('beforeToolExecution supports async hooks', async t => {
 	const stack = createMiddlewareStack();
 
 	stack.use({
 		async beforeToolExecution() {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			return false;
@@ -462,13 +459,13 @@ test('beforeToolExecution supports async hooks', async (t) => {
 	t.false(result);
 });
 
-test('afterToolExecution supports async hooks', async (t) => {
+test('afterToolExecution supports async hooks', async t => {
 	const stack = createMiddlewareStack();
 	let called = false;
 
 	stack.use({
 		async afterToolExecution() {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			called = true;
@@ -483,13 +480,13 @@ test('afterToolExecution supports async hooks', async (t) => {
 	t.true(called);
 });
 
-test('onError supports async hooks', async (t) => {
+test('onError supports async hooks', async t => {
 	const stack = createMiddlewareStack();
 	let called = false;
 
 	stack.use({
 		async onError() {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			called = true;
@@ -504,7 +501,7 @@ test('onError supports async hooks', async (t) => {
 // Middleware with only some hooks
 // ---------------------------------------------------------------------------
 
-test('middleware with partial hooks works correctly', async (t) => {
+test('middleware with partial hooks works correctly', async t => {
 	const stack = createMiddlewareStack();
 	const order: string[] = [];
 
@@ -533,7 +530,7 @@ test('middleware with partial hooks works correctly', async (t) => {
 // Mixed sync and async middleware
 // ---------------------------------------------------------------------------
 
-test('sync and async middleware can be mixed', async (t) => {
+test('sync and async middleware can be mixed', async t => {
 	const stack = createMiddlewareStack();
 	const order: number[] = [];
 
@@ -544,7 +541,7 @@ test('sync and async middleware can be mixed', async (t) => {
 	});
 	stack.use({
 		async onEvent() {
-			await new Promise<void>((resolve) => {
+			await new Promise<void>(resolve => {
 				setTimeout(resolve, 10);
 			});
 			order.push(2); // Async

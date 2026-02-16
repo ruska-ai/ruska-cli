@@ -4,7 +4,11 @@
  */
 
 import test from 'ava';
-import type {StreamRequest, StreamHandle, StreamEvent} from '../types/stream.js';
+import type {
+	StreamRequest,
+	StreamHandle,
+	StreamEvent,
+} from '../types/stream.js';
 import type {StreamServiceInterface} from '../lib/services/stream-service.interface.js';
 import {type CoreMessage, type ToolDefinition} from '../core/schemas.js';
 import {
@@ -24,7 +28,7 @@ function makeStreamService(
 		async connect(request: StreamRequest): Promise<StreamHandle> {
 			svc.lastRequest = request;
 			return {
-				events: (async function * () {
+				events: (async function* () {
 					for (const e of events) {
 						yield e;
 					}
@@ -67,15 +71,23 @@ test('coreToStreamMessage converts tool message with toolCallId', t => {
 		toolCallId: 'tc-123',
 	};
 	const stream = coreToStreamMessage(core);
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	t.deepEqual(stream, {role: 'tool', tool_call_id: 'tc-123', content: 'result data'});
+	t.deepEqual(stream, {
+		role: 'tool',
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		tool_call_id: 'tc-123',
+		content: 'result data',
+	});
 });
 
 test('coreToStreamMessage converts tool message without toolCallId', t => {
 	const core: CoreMessage = {role: 'tool', content: 'data'};
 	const stream = coreToStreamMessage(core);
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	t.deepEqual(stream, {role: 'tool', tool_call_id: '', content: 'data'});
+	t.deepEqual(stream, {
+		role: 'tool',
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		tool_call_id: '',
+		content: 'data',
+	});
 });
 
 // =============================================================================
@@ -145,11 +157,13 @@ test('invoke extracts tool calls from messages events', async t => {
 	const events: StreamEvent[] = [
 		{
 			type: 'messages',
-			payload: [{
-				content: '',
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				tool_calls: [{id: 'tc-1', name: 'bash', args: {command: 'ls'}}],
-			}],
+			payload: [
+				{
+					content: '',
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					tool_calls: [{id: 'tc-1', name: 'bash', args: {command: 'ls'}}],
+				},
+			],
 		},
 		{type: 'done', payload: undefined},
 	];
@@ -173,9 +187,11 @@ test('invoke extracts text from content blocks', async t => {
 	const events: StreamEvent[] = [
 		{
 			type: 'messages',
-			payload: [{
-				content: [{text: 'block text', type: 'text'}],
-			}],
+			payload: [
+				{
+					content: [{text: 'block text', type: 'text'}],
+				},
+			],
 		},
 		{type: 'done', payload: undefined},
 	];
@@ -246,9 +262,7 @@ test('invoke passes tool names to stream service', async t => {
 // =============================================================================
 
 test('invoke passes model and metadata from config', async t => {
-	const events: StreamEvent[] = [
-		{type: 'done', payload: undefined},
-	];
+	const events: StreamEvent[] = [{type: 'done', payload: undefined}];
 
 	const svc = makeStreamService(events);
 	const model = createStreamModel({
@@ -271,9 +285,7 @@ test('invoke passes model and metadata from config', async t => {
 // =============================================================================
 
 test('invoke converts all message types for stream request', async t => {
-	const events: StreamEvent[] = [
-		{type: 'done', payload: undefined},
-	];
+	const events: StreamEvent[] = [{type: 'done', payload: undefined}];
 
 	const svc = makeStreamService(events);
 	const model = createStreamModel({service: svc});
@@ -293,8 +305,12 @@ test('invoke converts all message types for stream request', async t => {
 	t.deepEqual(sent[0], {role: 'system', content: 'be helpful'});
 	t.deepEqual(sent[1], {role: 'user', content: 'hello'});
 	t.deepEqual(sent[2], {role: 'assistant', content: 'hi there'});
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	t.deepEqual(sent[3], {role: 'tool', tool_call_id: 'tc-99', content: 'result'});
+	t.deepEqual(sent[3], {
+		role: 'tool',
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		tool_call_id: 'tc-99',
+		content: 'result',
+	});
 });
 
 // =============================================================================
@@ -320,9 +336,7 @@ test('invoke result passes modelResultSchema validation', async t => {
 // =============================================================================
 
 test('invoke without tools omits tools from request', async t => {
-	const events: StreamEvent[] = [
-		{type: 'done', payload: undefined},
-	];
+	const events: StreamEvent[] = [{type: 'done', payload: undefined}];
 
 	const svc = makeStreamService(events);
 	const model = createStreamModel({service: svc});
@@ -341,19 +355,23 @@ test('invoke accumulates tool calls across multiple message events', async t => 
 	const events: StreamEvent[] = [
 		{
 			type: 'messages',
-			payload: [{
-				content: '',
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				tool_calls: [{id: 'tc-1', name: 'bash', args: {command: 'ls'}}],
-			}],
+			payload: [
+				{
+					content: '',
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					tool_calls: [{id: 'tc-1', name: 'bash', args: {command: 'ls'}}],
+				},
+			],
 		},
 		{
 			type: 'messages',
-			payload: [{
-				content: '',
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				tool_calls: [{id: 'tc-2', name: 'echo', args: {msg: 'hi'}}],
-			}],
+			payload: [
+				{
+					content: '',
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					tool_calls: [{id: 'tc-2', name: 'echo', args: {msg: 'hi'}}],
+				},
+			],
 		},
 		{type: 'done', payload: undefined},
 	];

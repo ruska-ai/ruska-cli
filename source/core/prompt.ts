@@ -57,9 +57,7 @@ export function renderTemplate(
 	promptTemplate: PromptTemplate,
 	variables: Record<string, string>,
 ): string {
-	const missing = promptTemplate.variables.filter(
-		(v) => !(v in variables),
-	);
+	const missing = promptTemplate.variables.filter(v => !(v in variables));
 
 	if (missing.length > 0) {
 		throw new Error(

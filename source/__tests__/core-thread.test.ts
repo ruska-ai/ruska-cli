@@ -148,7 +148,11 @@ test('eventsOfType returns multiple events of same type', t => {
 		timestamp: 7000,
 	};
 
-	const thread = createThread([userInputEvent, modelResponseEvent, secondInput]);
+	const thread = createThread([
+		userInputEvent,
+		modelResponseEvent,
+		secondInput,
+	]);
 	const userInputs = thread.eventsOfType('user_input');
 	t.is(userInputs.length, 2);
 	t.is(userInputs[0]!.message.content, 'hello');

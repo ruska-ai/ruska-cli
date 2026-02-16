@@ -30,7 +30,9 @@ function main() {
 	// => "Error: Unknown error | Attempt 3/3 | Fatal"
 
 	// --- 4. Error with a code property ---
-	const codedError = Object.assign(new Error('Rate limited'), {code: 'RATE_LIMIT'});
+	const codedError = Object.assign(new Error('Rate limited'), {
+		code: 'RATE_LIMIT',
+	});
 	const err4 = compactify(codedError, 1, 5);
 	console.log('\nWith code:', formatForContext(err4));
 	// => "Error: Rate limited | Code: RATE_LIMIT | Attempt 1/5 | Recoverable"
@@ -40,7 +42,9 @@ function main() {
 	for (let attempt = 1; attempt <= 4; attempt++) {
 		const error = compactify(new Error('API error'), attempt, 3);
 		console.log(
-			`  Attempt ${attempt}: recoverable=${isRecoverable(error)} | ${formatForContext(error)}`,
+			`  Attempt ${attempt}: recoverable=${isRecoverable(
+				error,
+			)} | ${formatForContext(error)}`,
 		);
 	}
 }

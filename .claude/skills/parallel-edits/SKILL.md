@@ -1,6 +1,6 @@
 ---
 name: parallel-edits
-description: "Apply coordinated changes across multiple files efficiently using parallel Edit tool calls. Use when making systematic changes like renaming variables, updating imports, applying pattern changes, or refactoring across files. Triggers on: rename across files, update all imports, change pattern in multiple files, refactor across codebase, batch edit files."
+description: 'Apply coordinated changes across multiple files efficiently using parallel Edit tool calls. Use when making systematic changes like renaming variables, updating imports, applying pattern changes, or refactoring across files. Triggers on: rename across files, update all imports, change pattern in multiple files, refactor across codebase, batch edit files.'
 ---
 
 # Parallel File Edits
@@ -37,22 +37,26 @@ Before executing edits, verify:
 ## Important Guidelines
 
 ### Indentation Preservation
+
 - When reading files, line numbers appear as: [spaces][number][tab][content]
 - The actual file content starts AFTER the tab
 - Never include line number prefixes in old_string or new_string
 - Preserve exact indentation (tabs/spaces) as it appears in the file
 
 ### Uniqueness Requirements
+
 - If old_string appears multiple times, provide more context to make it unique
 - OR use replace_all: true to change all instances
 - The Edit tool will fail if old_string is not unique without replace_all
 
 ### Parallel Execution
+
 - All Edit calls should be made in the same tool invocation block
 - This maximizes efficiency for coordinated changes
 - Each edit is independent and does not depend on others
 
 ### Error Handling
+
 - If validation fails, stop before making any edits
 - Report which validation check failed and why
 - Suggest corrections or ask for clarification
@@ -69,6 +73,7 @@ Assistant: I will rename userId to accountId across the auth module files.
 [Executes: 3 Edit tool calls in parallel with replace_all=true]
 
 Successfully renamed userId to accountId in 3 files:
+
 - /src/auth/login.ts (2 instances)
 - /src/auth/session.ts (4 instances)
 - /src/auth/middleware.ts (1 instance)
@@ -85,6 +90,7 @@ Assistant: I will update the import paths across all component files.
 [Executes: 5 Edit tool calls in parallel]
 
 Successfully updated import paths in 5 files:
+
 - /src/components/Button.tsx
 - /src/components/Card.tsx
 - /src/components/Modal.tsx
@@ -95,12 +101,12 @@ Successfully updated import paths in 5 files:
 
 ### Edit Tool Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| file_path | string | Yes | Absolute path to the file |
-| old_string | string | Yes | Exact text to replace (no line numbers) |
-| new_string | string | Yes | Replacement text (must differ from old_string) |
-| replace_all | boolean | No | Replace all instances (default: false) |
+| Parameter   | Type    | Required | Description                                    |
+| ----------- | ------- | -------- | ---------------------------------------------- |
+| file_path   | string  | Yes      | Absolute path to the file                      |
+| old_string  | string  | Yes      | Exact text to replace (no line numbers)        |
+| new_string  | string  | Yes      | Replacement text (must differ from old_string) |
+| replace_all | boolean | No       | Replace all instances (default: false)         |
 
 ### Common Patterns
 

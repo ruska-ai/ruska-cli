@@ -13,15 +13,15 @@ export function compactify(
 	attempt: number,
 	maxAttempts: number,
 ): CompactError {
-	const message
-		= error instanceof Error
+	const message =
+		error instanceof Error
 			? error.message
 			: typeof error === 'string'
-				? error
-				: 'Unknown error';
+			? error
+			: 'Unknown error';
 
-	const code
-		= error instanceof Error && 'code' in error
+	const code =
+		error instanceof Error && 'code' in error
 			? String((error as Error & {code: unknown}).code)
 			: undefined;
 

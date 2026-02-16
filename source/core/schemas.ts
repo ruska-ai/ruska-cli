@@ -181,13 +181,7 @@ export type AgentEvent = z.infer<typeof agentEventSchema>;
 // ---------------------------------------------------------------------------
 
 export const agentStateSchema = z.object({
-	status: z.enum([
-		'idle',
-		'running',
-		'waiting_for_human',
-		'done',
-		'error',
-	]),
+	status: z.enum(['idle', 'running', 'waiting_for_human', 'done', 'error']),
 	events: z.array(agentEventSchema),
 	iterations: z.number(),
 	errorCount: z.number(),
