@@ -381,7 +381,7 @@
         "Typecheck passes"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3A — blocked by US-019. Major rewrite of ChatCommandTui. Independent of US-021. Keep presentation components, replace orchestration logic."
     },
     {
