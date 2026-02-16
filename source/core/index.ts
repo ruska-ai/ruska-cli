@@ -150,3 +150,9 @@ export {
 	type ConsentHandler,
 	createBashConsentMiddleware,
 } from './bash-consent-middleware.js';
+
+// Agent runner factory
+export {
+	type AgentRunnerConfig,
+	createAgentRunner,
+} from './runner.js';

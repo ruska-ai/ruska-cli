@@ -239,3 +239,16 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - Catching errors from `fs.promises.readFile` and `fs.promises.readdir` with empty catch blocks is the clean pattern for returning `undefined`/`[]` when files or directories don't exist
   - Test teardown with `t.teardown(() => { fs.rmSync(dir, ...) })` keeps temp directories clean after AVA tests
 ---
+
+## 2026-02-16 - US-019
+- What was implemented: Created `source/core/runner.ts` with `createAgentRunner(config)` factory that wires model, tools, middleware, and thread together from CLI-level options. The factory creates a `ToolRegistry` (optionally registers bash tool), a `MiddlewareStack` (optionally adds consent middleware and thread-history middleware), a `ModelInterface` via `createStreamModel()`, and returns the async generator from `runAgentStream()`. Thread continuation loads prior events via `ThreadStore` and injects them as context via a `beforeModel` middleware hook. Created `source/__tests__/core-runner.test.ts` with 7 tests. Updated `source/core/index.ts` barrel export.
+- Files changed: source/core/runner.ts (new), source/__tests__/core-runner.test.ts (new), source/core/index.ts (modified), .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - `MessagePayload` in `source/types/stream.ts` does NOT have a `role` field — mock `StreamEvent` payloads should not include `role`
+  - Thread continuation uses a `beforeModel` middleware to prepend historical messages — this avoids modifying the agent loop's `initialState()/reduce()` contract
+  - The history middleware deduplicates system prompts: if the current context already has a system message, history messages skip their system message
+  - `createAgentRunner()` is `async` because it may need to `await threadStore.load()` for thread continuation
+  - XO `unicorn/prefer-set-has` requires `new Set(array.map(...))` + `.has()` instead of `array.includes()` when checking membership across multiple values
+  - Mock `StreamServiceInterface` for runner tests needs to return multiple response sets (one per model call) — use a `callIndex` counter pattern
+  - Auto-approve works by simply not adding the consent middleware to the stack — the bash tool still executes, just without the consent gate
+---
