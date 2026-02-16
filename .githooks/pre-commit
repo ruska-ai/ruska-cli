@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -e
+
+echo "Running lint checks on staged files..."
+git diff --cached --name-only -z --diff-filter=ACMR -- '*.js' '*.cjs' '*.mjs' '*.ts' '*.tsx' \
+	| xargs -0 -r npx xo
+
+if git diff --cached --name-only --diff-filter=ACMR -- 'source/**' | grep -q .; then
+	echo "Running tests..."
+	npm run test:unit
+else
+	echo "Skipping tests (no staged changes under source/)."
+fi

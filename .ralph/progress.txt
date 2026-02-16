@@ -1,0 +1,289 @@
+# Ralph Progress Log
+Started: Sat Feb 14 19:14:28 MST 2026
+---
+
+## Codebase Patterns
+- Build command: `npm run build` (runs `tsc`)
+- Test command: `npm run test:unit` (runs `npm run build && ava`)
+- Lint command: `npm run lint` (runs `xo`)
+- Test files go in `source/__tests__/` and are compiled to `dist/__tests__/`
+- AVA test runner picks up `dist/__tests__/**/*.test.js`
+- Project uses ESM (`"type": "module"` in package.json)
+- Zod v4.x installed (^4.3.6) - uses `import {z} from 'zod'`
+- Commit message format: `feat: [Story ID] - [Story Title]`
+- The `dist/` directory is NOT gitignored — don't commit it
+- The Makefile has a pre-existing change (not from ralph) — leave it alone
+- XO linter enforces `strictCamelCase` for variable names — use `coreMessageSchema` not `CoreMessageSchema`
+- Zod v4 `z.record()` requires TWO args: `z.record(z.string(), valueSchema)` — single-arg form throws
+- Schema naming convention: `<name>Schema` (camelCase) for Zod schemas, `<Name>` (PascalCase) for inferred types
+- Import schemas from `../core/schemas.js` in test files (ESM `.js` extension required)
+- XO rejects `as Type` casts — use `const x: Type = { ... }` instead (`@typescript-eslint/consistent-type-assertions`)
+- `@sindresorhus/tsconfig` targets ES2020 — `replaceAll` (ES2021) and `Object.hasOwn` (ES2022) are not available; use `replace` with `/g` and `in` operator instead
+- XO `unicorn/prefer-string-replace-all` conflicts with ES2020 target — disable with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
+- XO `unicorn/better-regex` simplifies escaped braces in regex: use `/{{(\w+)}}/g` not `/\{\{(\w+)\}\}/g`
+- XO `unicorn/numeric-separators-style` rejects separators with invalid group length (e.g., `1_000`) — use plain numbers (e.g., `1000`) for small values
+- XO `@typescript-eslint/member-ordering` requires properties before methods in type definitions — put `readonly length: number` before method signatures
+- TypeScript strict mode: array index access may be `undefined` — use non-null assertion `arr[0]!` when length is already asserted
+- XO `capitalized-comments` rule requires inline comments to start with an uppercase letter
+- XO `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
+- XO `import/order` requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`)
+- XO `max-depth` limits nesting to 4 levels — extract deeply nested logic into helper functions
+- XO `unicorn/prefer-switch` triggers when 3+ else-if branches compare the same discriminant — use switch instead
+- Mock `StreamServiceInterface` in tests using async generator: `async function*() { for (const e of events) yield e; }`
+- XO `max-params` limits functions to 4 parameters — group 5+ params into an options/input object
+- `eslint-disable-next-line no-await-in-loop` only applies inside loop bodies — adding it outside a loop triggers `eslint-comments/no-unused-disable`
+- XO `unicorn/prefer-top-level-await` rejects `main().catch(console.error)` — use eslint-disable and explicit `(error: unknown) => {}` callback
+- XO `@typescript-eslint/ban-types` rejects `null` as a type — use `undefined` instead (e.g., `Promise<Thread | undefined>`)
+- XO `@typescript-eslint/promise-function-async` requires functions that return promises to be declared `async`
+- XO `@typescript-eslint/use-unknown-in-catch-callback-variable` requires `: unknown` typing on catch callback params
+---
+
+## 2026-02-14 - US-001
+- What was implemented: Added zod as a production dependency
+- Files changed: package.json, package-lock.json
+- **Learnings for future iterations:**
+  - `npm install zod` installs v4.x by default (^4.3.6 as of Feb 2026)
+  - zod correctly lands in `dependencies` (not `devDependencies`) with plain `npm install zod`
+  - Build passes cleanly with no additional config needed for zod
+  - `dist/` directory is not gitignored — be careful not to stage it
+---
+
+## 2026-02-14 - US-002
+- What was implemented: Created `source/core/schemas.ts` with Zod schemas as single source of truth for all agent types, plus `source/__tests__/core-schemas.test.ts` with 47 comprehensive tests
+- Files changed: source/core/schemas.ts (new), source/__tests__/core-schemas.test.ts (new)
+- **Learnings for future iterations:**
+  - XO linter enforces `strictCamelCase` for exported `const` variables — PascalCase schema names like `CoreMessageSchema` will fail lint; must use `coreMessageSchema`
+  - Zod v4 `z.record()` requires two args: key schema and value schema (e.g., `z.record(z.string(), z.unknown())`) — the single-arg form from Zod v3 does not work
+  - `z.infer` is a type-level utility — it's not available at runtime (no `typeof z.infer` — that's expected)
+  - `z.discriminatedUnion('type', [...])` works in Zod v4 and provides descriptive error messages for mismatched types
+  - All types are derived via `z.infer<typeof schema>` — no manual type duplication
+  - Created `source/core/` directory for the first time — future stories will add more files here
+---
+
+## 2026-02-14 - US-003
+- What was implemented: Created `source/core/middleware.ts` with composable middleware system (Middleware type + createMiddlewareStack() factory), plus `source/__tests__/core-middleware.test.ts` with 27 comprehensive tests
+- Files changed: source/core/middleware.ts (new), source/__tests__/core-middleware.test.ts (new)
+- **Learnings for future iterations:**
+  - XO linter rejects `as Type` casts — use `const x: Type = { ... }` pattern instead (`@typescript-eslint/consistent-type-assertions`)
+  - `no-await-in-loop` eslint rule needs to be disabled with inline comments when await-in-loop is intentional (sequential middleware execution)
+  - Import types from schemas using `type` keyword: `import { type AgentEvent, ... } from './schemas.js'`
+  - Test helpers (makeState, makeToolCall, etc.) are useful patterns for building valid typed test fixtures
+---
+
+## 2026-02-14 - US-004
+- What was implemented: Created `source/core/errors.ts` with pure functions (compactify, isRecoverable, formatForContext) for normalized error handling with retry tracking, plus `source/__tests__/core-errors.test.ts` with 20 comprehensive tests
+- Files changed: source/core/errors.ts (new), source/__tests__/core-errors.test.ts (new)
+- **Learnings for future iterations:**
+  - Pure functions with no class overhead work well for error utilities — no need for a class-based approach
+  - `Object.assign(new Error('msg'), {code: 'ERR'})` is the pattern for creating Error objects with extra properties in tests
+  - CompactError `code` field is optional — use spread `...(code ? {code} : {})` to conditionally include it
+  - `formatForContext` uses pipe-delimited format for terse LLM-readable error strings
+  - Error module has no XO lint issues — pure functions with type imports are clean
+---
+
+## 2026-02-14 - US-005
+- What was implemented: Created `source/core/prompt.ts` with pure functions (renderPrompt, createPromptTemplate, renderTemplate) for prompt-as-code with variable substitution, plus `source/__tests__/core-prompt.test.ts` with 13 comprehensive tests
+- Files changed: source/core/prompt.ts (new), source/__tests__/core-prompt.test.ts (new)
+- **Learnings for future iterations:**
+  - `@sindresorhus/tsconfig` targets ES2020 lib — `String.replaceAll` is not available (ES2021), use `String.replace` with `/g` flag instead
+  - `Object.hasOwn` is ES2022 — use `key in obj` as the ES2020-compatible alternative
+  - XO `unicorn/prefer-string-replace-all` rule conflicts with ES2020 target — suppress with `// eslint-disable-next-line unicorn/prefer-string-replace-all`
+  - XO `unicorn/better-regex` simplifies escaped braces: `/{{(\w+)}}/g` is preferred over `/\{\{(\w+)\}\}/g`
+  - Pure function modules with `type` imports from schemas are the cleanest pattern — no lint issues beyond ES target mismatches
+---
+
+## 2026-02-14 - US-006
+- What was implemented: Created `source/core/thread.ts` with `createThread()` factory and `deserializeThread()` hydrator for an append-only event log, plus `source/__tests__/core-thread.test.ts` with 18 comprehensive tests
+- Files changed: source/core/thread.ts (new), source/__tests__/core-thread.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `unicorn/numeric-separators-style` rejects separators with invalid group lengths like `1_000` — use plain numbers for small values
+  - XO `@typescript-eslint/member-ordering` requires properties/fields before method definitions in type declarations
+  - TypeScript strict mode treats array index access as possibly `undefined` — use non-null assertion `arr[0]!` after asserting length
+  - Thread type uses `readonly length: number` getter — declared first in type per member-ordering rule
+  - `events()` returns a shallow copy (`[...log]`) to prevent external mutation of the internal log
+  - `deserializeThread` re-validates all events, ensuring data integrity on hydration
+---
+
+## 2026-02-14 - US-007
+- What was implemented: Created `source/core/context.ts` with `buildContext()` and `estimateTokens()` for building model context windows from event logs, plus `source/__tests__/core-context.test.ts` with 20 comprehensive tests
+- Files changed: source/core/context.ts (new), source/__tests__/core-context.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `capitalized-comments` rule requires all inline comments to start with an uppercase letter — use `// Skip ...` not `// skip ...`
+  - `buildContext` maps events to messages via switch on discriminated union type — only `user_input`, `model_response`, `tool_result`, and `error` events produce messages
+  - Error events are formatted as user-role messages with `[Agent Error]` prefix using `formatForContext` from errors module — this enables LLM self-healing
+  - Tail windowing via `maxMessages` slices messages BEFORE prepending system prompt — system prompt is always first regardless of windowing
+  - `estimateTokens` uses ~4 chars/token heuristic with overhead for role and structure — simple and sufficient for windowing decisions
+  - Pure function modules importing from sibling core modules (schemas + errors) work cleanly with no lint friction
+---
+
+## 2026-02-14 - US-008
+- What was implemented: Created `source/core/tool.ts` with `createToolRegistry()` factory and `defineTool()` convenience builder implementing the 3-step structured output pattern, plus `source/__tests__/core-tool.test.ts` with 17 comprehensive tests
+- Files changed: source/core/tool.ts (new), source/__tests__/core-tool.test.ts (new)
+- **Learnings for future iterations:**
+  - The `no-await-in-loop` eslint rule does NOT trigger for a single `await` inside a try/catch — don't add unnecessary disable comments
+  - `no-throw-literal` rule doesn't apply to template `throw 'string'` in XO — only `@typescript-eslint/only-throw-error` applies; don't add redundant disable comments
+  - `eslint-comments/no-unused-disable` catches unnecessary eslint disable comments — only add disables when the rule actually reports
+  - ToolRegistry uses `Map<string, {definition, executor}>` internally — `definitions()` returns a copy via `[...tools.values()].map()`
+  - Unknown tool calls return `ToolResult` with `isError: true` rather than throwing — keeps the tool interface consistent
+  - `defineTool()` validates via `toolDefinitionSchema.parse()` immediately on creation — catches malformed definitions early
+---
+
+## 2026-02-14 - US-009
+- What was implemented: Created `source/core/bash-tool.ts` with `bashToolDefinition`, `createBashExecutor()`, and `registerBashTool()` that delegate to the existing `lib/local-tools/bash-executor.ts` infrastructure, plus `source/__tests__/core-bash-tool.test.ts` with 11 comprehensive tests
+- Files changed: source/core/bash-tool.ts (new), source/__tests__/core-bash-tool.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `import/order` rule requires parent-directory imports (`../lib/...`) before same-directory imports (`./schemas.js`) — order by path depth
+  - Wrapping existing infrastructure (executeBash + formatResultForLlm) is straightforward — no need to re-implement validation logic
+  - Tool definition parameters without `required: true` are treated as optional — only `command` needs `required: true`
+  - The executor extracts args safely with `String(args['command'] ?? '')` and conditional undefined checks for optional params
+  - `registerBashTool(registry)` is a one-liner convenience that pairs the definition with the executor
+---
+
+## 2026-02-14 - US-010
+- What was implemented: Created `source/core/human.ts` with `humanContactToolDefinition`, `parseHumanContactArgs()`, and `HumanContactHandler` type for modeling human interaction as a structured tool, plus `source/__tests__/core-human.test.ts` with 15 comprehensive tests
+- Files changed: source/core/human.ts (new), source/__tests__/core-human.test.ts (new)
+- **Learnings for future iterations:**
+  - Human contact tool follows the same pattern as bash-tool: definition + parser + type export
+  - `parseHumanContactArgs` delegates directly to `humanContactRequestSchema.parse()` — no wrapper logic needed since the schema already validates urgency enum and optional fields
+  - TypeScript strict mode: iterating over `['low', 'medium', 'high']` infers `string` type — use `as const` to preserve literal union type for enum comparisons
+  - Simple modules with pure functions and type exports have zero XO lint friction
+---
+
+## 2026-02-14 - US-011
+- What was implemented: Created `source/core/model.ts` with `ModelInterface` type, `createStreamModel()` factory, and conversion helpers (`coreToStreamMessage`, `streamToolCallsToCoreToolCalls`) that bridge between core schemas and the existing `StreamService` infrastructure, plus `source/__tests__/core-model.test.ts` with 19 comprehensive tests
+- Files changed: source/core/model.ts (new), source/__tests__/core-model.test.ts (new)
+- **Learnings for future iterations:**
+  - After checking `msg.role === 'tool'` in an if-branch, TypeScript narrows the remaining roles automatically — no `as` cast needed for `'user' | 'assistant' | 'system'`
+  - XO `unicorn/prefer-switch` rule triggers when 3+ `else-if` branches compare the same discriminant — refactor to `switch`
+  - XO `max-depth` rule limits nesting to 4 levels — extract nested logic (e.g., content block text extraction) into helper functions
+  - `MessagePayload.content` is `string | ContentBlock[] | undefined` — handle all three branches explicitly
+  - Stream tool_calls format (`{id, name, args}`) is identical to core `ToolCall` schema — conversion is a simple map with no transformation needed
+  - `StreamRequest.tools` is `string[]` (tool names only) — convert `ToolDefinition[]` to names via `.map(t => t.name)`
+  - Mock `StreamServiceInterface` in tests using an async generator function: `async function*() { for (const e of events) yield e; }`
+  - XO `@typescript-eslint/naming-convention` enforces `strictCamelCase` on object literal properties — add `// eslint-disable-next-line @typescript-eslint/naming-convention` before snake_case properties like `tool_call_id`, `tool_calls`, `thread_id`
+---
+
+## 2026-02-14 - US-012
+- What was implemented: Created `source/core/agent.ts` with `initialState()`, `reduce()`, `nextAction()`, and `runAgent()` implementing the agent loop as a stateless reducer with imperative loop driver, plus `source/__tests__/core-agent.test.ts` with 38 comprehensive tests
+- Files changed: source/core/agent.ts (new), source/__tests__/core-agent.test.ts (new)
+- **Learnings for future iterations:**
+  - XO `max-params` rule limits functions to 4 parameters — group 5+ params into a typed input/options object (e.g., `RunAgentInput`, `ModelCallInput`)
+  - `eslint-disable-next-line no-await-in-loop` must only appear inside loop bodies — placing it outside a `while` loop triggers `eslint-comments/no-unused-disable`
+  - The reducer pattern works well for agent state: `reduce()` is pure (no side effects), `nextAction()` determines intent, and `runAgent()` is the imperative driver with side effects
+  - `findPendingToolCall` walks backwards through events to find the most recent `model_response`, then checks which tool calls lack corresponding `tool_result` events
+  - Loop guard (`maxLoop`) prevents infinite loops — set to `(maxIterations + maxErrors + 1) * 10` as a generous upper bound
+  - `handleError` creates `CompactError` via `compactify()` which sets `recoverable` based on attempt vs maxAttempts — this drives whether `reduce()` keeps `running` or transitions to `error`
+  - Middleware hooks are called at appropriate points: `runOnEvent` after state transitions, `runBeforeModel` before model invocation, `runBeforeToolExecution` before tool execution (can skip), `runAfterToolExecution` after tool execution, `runOnError` on errors
+---
+
+## 2026-02-16 - US-013
+- What was implemented: Created `source/core/index.ts` barrel export re-exporting all public API from all 11 core modules (schemas, agent, model, tool, bash-tool, middleware, context, thread, prompt, errors, human). Verified build, lint (no new errors), all 364 tests pass, and typecheck passes.
+- Files changed: source/core/index.ts (new)
+- **Learnings for future iterations:**
+  - Barrel export follows `source/types/index.ts` pattern: grouped re-exports with section comments
+  - Use `type` keyword for type-only exports in barrel: `export { type Foo, bar } from './module.js'`
+  - Pre-existing lint errors in `source/core/examples/` are not from core module code — verify via `npx xo source/core/index.ts` to check only new files
+  - The ESM `.js` extension is required in all import paths (e.g., `'./schemas.js'`)
+  - All 11 test files (core-schemas, core-middleware, core-errors, core-prompt, core-thread, core-context, core-tool, core-bash-tool, core-human, core-model, core-agent) plus existing tests pass together (364 total)
+---
+
+## 2026-02-16 - US-014
+- What was implemented: Verified `source/core/README.md` (created in prior iteration) meets all acceptance criteria. Fixed 22 lint errors in `source/core/examples/` to make `npm run lint` pass cleanly. Errors were: `capitalized-comments` (lowercase inline comments), `unicorn/prefer-top-level-await` (`main().catch()` pattern), and `@typescript-eslint/use-unknown-in-catch-callback-variable` (`console.error` as catch callback).
+- Files changed: source/core/examples/01-tools-and-registry.ts, source/core/examples/03-thread-and-context.ts, source/core/examples/04-middleware.ts, source/core/examples/05-reducer.ts, source/core/examples/06-agent-loop.ts, source/core/examples/07-errors.ts, source/core/examples/08-validation.ts
+- **Learnings for future iterations:**
+  - XO `unicorn/prefer-top-level-await` rejects `main().catch(console.error)` — use `// eslint-disable-next-line unicorn/prefer-top-level-await` and wrap the callback: `main().catch((error: unknown) => { console.error(error); })`
+  - XO `@typescript-eslint/use-unknown-in-catch-callback-variable` requires explicit `unknown` typing on catch callback parameters
+  - When creating example files, always capitalize inline comments to satisfy `capitalized-comments` rule
+  - All 14 user stories are now complete — the 12-factor agent core module is fully implemented and documented
+---
+
+## 2026-02-16 - US-015
+- What was implemented: Verified existing barrel export `source/core/index.ts` (created in US-013) already re-exports all 86 public symbols from all 11 core modules. Ran full quality checks — build, lint, test (364 pass), typecheck all pass. Marked US-015 as complete.
+- Files changed: .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - US-015 was fully satisfied by the US-013 barrel export implementation — no code changes needed
+  - The barrel export has 138 lines covering schemas (45 symbols), agent (5), model (5), tool (4), bash-tool (3), middleware (3), context (3), thread (3), prompt (3), errors (3), human (3)
+  - Always audit existing code before assuming new work is needed — the PRD notes "Supersedes US-013" but US-013 already covered the full scope
+---
+
+## 2026-02-16 - US-016
+- What was implemented: Added `runAgentStream()` as an `AsyncGenerator<AgentEvent, AgentState>` to `source/core/agent.ts`. Refactored internal handlers (`handleModelCall`, `handleToolExecution`, `handleHumanContact`, `handleError`) to return `StepResult` (state + emittedEvents). Added `handleDone` and `handleFatalError` helpers. Rewrote `runAgent()` as a thin wrapper that drains the generator. Added `RunAgentStreamInput` type with optional `onEvent` callback. Updated barrel export in `source/core/index.ts`. Created `source/__tests__/core-agent-stream.test.ts` with 7 tests.
+- Files changed: source/core/agent.ts (modified), source/core/index.ts (modified), source/__tests__/core-agent-stream.test.ts (new)
+- **Learnings for future iterations:**
+  - `eslint-disable-next-line no-await-in-loop` only applies inside loop bodies — an await in an `if` block before the `while` loop does not need it
+  - XO `unicorn/prefer-set-has` requires using `Set.has()` instead of `Array.includes()` when checking membership across multiple values — convert `events.map(...)` to `new Set(events.map(...))`
+  - XO `unicorn/no-for-loop` rejects `for (let i = ...)` loops — use `for (const [index, item] of array.entries())` instead
+  - The `StepResult` pattern (returning both state and emitted events from handlers) cleanly separates state transitions from event emission for generator-based streaming
+  - `AsyncGenerator<AgentEvent, AgentState>` — yield type is `AgentEvent`, return type is `AgentState` (accessed via `result.value` when `result.done === true`)
+---
+
+## 2026-02-16 - US-017
+- What was implemented: Created `source/core/bash-consent-middleware.ts` with `createBashConsentMiddleware(handler)` factory, `ConsentHandler` type, and `ConsentDecision` type. The middleware intercepts bash tool calls via `beforeToolExecution` hook — blocked commands return false immediately, non-blocked commands delegate to the consent handler, and non-bash tools pass through. Reuses `validateCommand()` and `assessCommandRisk()` from `source/lib/local-tools/security.ts`. Created `source/__tests__/core-bash-consent-middleware.test.ts` with 13 tests. Updated `source/core/index.ts` barrel export.
+- Files changed: source/core/bash-consent-middleware.ts (new), source/__tests__/core-bash-consent-middleware.test.ts (new), source/core/index.ts (modified)
+- **Learnings for future iterations:**
+  - XO `@typescript-eslint/consistent-type-assertions` rejects `as ConsentDecision` casts — use explicit return type annotation `(): Promise<ConsentDecision> =>` instead
+  - The `CommandRisk` type is re-exported from `source/lib/local-tools/types.js` — import it from there, not from security.ts
+  - Middleware that only uses `beforeToolExecution` leaves all other hooks as `undefined` — tests should verify this to ensure no unintended side effects
+  - The `validateCommand()` result discriminates on `valid` field — when `valid: true`, `warnings` is available; when `valid: false`, `reason` is available
+  - Simple middleware (~65 lines) that delegates to existing infrastructure (security.ts) is the right pattern — no need to re-implement validation logic
+---
+
+## 2026-02-16 - US-018
+- What was implemented: Created `source/core/thread-store.ts` with `ThreadStore` interface and `createFileThreadStore(dir?)` factory for filesystem persistence of threads. The store uses `thread.serialize()` and `deserializeThread()` from `source/core/thread.ts` to read/write JSON files. Created `source/__tests__/core-thread-store.test.ts` with 12 tests using temp directories for isolation. Updated `source/core/index.ts` barrel export.
+- Files changed: source/core/thread-store.ts (new), source/__tests__/core-thread-store.test.ts (new), source/core/index.ts (modified)
+- **Learnings for future iterations:**
+  - XO `@typescript-eslint/ban-types` rejects `null` as a type — use `undefined` instead (e.g., `Promise<Thread | undefined>` not `Promise<Thread | null>`)
+  - XO `import/order` requires no empty lines between import groups — all imports (node builtins, third-party, and local) must be contiguous with no blank lines between groups
+  - XO `@typescript-eslint/promise-function-async` requires functions returning promises to be declared `async` — use `async () => store.delete(...)` not `() => store.delete(...)`
+  - `fs.promises.mkdir(dir, {recursive: true})` safely creates nested directories on save — no need to pre-check existence
+  - Catching errors from `fs.promises.readFile` and `fs.promises.readdir` with empty catch blocks is the clean pattern for returning `undefined`/`[]` when files or directories don't exist
+  - Test teardown with `t.teardown(() => { fs.rmSync(dir, ...) })` keeps temp directories clean after AVA tests
+---
+
+## 2026-02-16 - US-019
+- What was implemented: Created `source/core/runner.ts` with `createAgentRunner(config)` factory that wires model, tools, middleware, and thread together from CLI-level options. The factory creates a `ToolRegistry` (optionally registers bash tool), a `MiddlewareStack` (optionally adds consent middleware and thread-history middleware), a `ModelInterface` via `createStreamModel()`, and returns the async generator from `runAgentStream()`. Thread continuation loads prior events via `ThreadStore` and injects them as context via a `beforeModel` middleware hook. Created `source/__tests__/core-runner.test.ts` with 7 tests. Updated `source/core/index.ts` barrel export.
+- Files changed: source/core/runner.ts (new), source/__tests__/core-runner.test.ts (new), source/core/index.ts (modified), .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - `MessagePayload` in `source/types/stream.ts` does NOT have a `role` field — mock `StreamEvent` payloads should not include `role`
+  - Thread continuation uses a `beforeModel` middleware to prepend historical messages — this avoids modifying the agent loop's `initialState()/reduce()` contract
+  - The history middleware deduplicates system prompts: if the current context already has a system message, history messages skip their system message
+  - `createAgentRunner()` is `async` because it may need to `await threadStore.load()` for thread continuation
+  - XO `unicorn/prefer-set-has` requires `new Set(array.map(...))` + `.has()` instead of `array.includes()` when checking membership across multiple values
+  - Mock `StreamServiceInterface` for runner tests needs to return multiple response sets (one per model call) — use a `callIndex` counter pattern
+  - Auto-approve works by simply not adding the consent middleware to the stack — the bash tool still executes, just without the consent gate
+- ConsentHandler bridge for React: set state with `{command, risk, warnings, resolve}` — UI callbacks call `resolve()` to unblock the core middleware Promise
+- `AsyncGenerator<YieldType, ReturnType>`: use `if (result.done)` to narrow `result.value` to `ReturnType` in TypeScript
+---
+
+## 2026-02-16 - US-020
+- What was implemented: Rewrote `ChatCommandTui` in `source/commands/chat.tsx` to use `createAgentRunner()` from the core module. Replaced ~345 lines of ad-hoc orchestration (useBashConsent hook, manual tool call detection, continueConversation, processedToolCalls, groupMessagesIntoBlocks, extractModelFromEvents, useStream) with ~204 lines that delegate to the core agent loop. Net reduction of ~141 lines.
+- Files changed: source/commands/chat.tsx (modified), .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - ConsentHandler bridge pattern: core middleware returns a `Promise<ConsentDecision>` — set React state with `{command, risk, warnings, resolve}`, then UI callbacks call `resolve()` to unblock the middleware
+  - `AsyncGenerator<AgentEvent, AgentState>` return type: use `if (result.done)` to narrow `result.value` to `AgentState` — TypeScript only narrows inside the `done` branch
+  - XO does NOT reject `as Type` casts in this context — but the narrowing approach (`if (result.done) { const s: AgentState = result.value }`) is cleaner
+  - `useRef(new Map<string, ...>())` is the pattern for correlating tool_call args with tool_result events across the generator stream
+  - `processEvent` callback with `useCallback(fn, [])` (stable reference) is safe because it only uses `useRef` and state setters (all stable)
+  - The BashBlockedPrompt component is no longer needed in TUI — blocked commands are handled internally by the consent middleware (returns false → skipped by agent loop)
+  - The `useStream` hook and `useBashConsent` hook are no longer imported by chat.tsx — they remain available for other consumers
+---
+
+## 2026-02-16 - US-021
+- What was implemented: Rewrote `runJsonMode()` in `source/commands/chat.tsx` to use `createAgentRunner()` from the core module. Replaced the old `StreamService.connect()` + manual event loop with the core runner's async generator. Added `writeEventAsNdjson()` helper to map `AgentEvent` types to NDJSON format (`model_response` → chunk, `tool_result` → tool_result, done → done). Added `ToolResultOutput` type to `source/types/output.ts`. Removed unused `tools` prop from `ChatCommandProperties`, removed `parseToolsFlag`/`buildToolsArray` imports, and removed unused `extractContent`/`StreamRequest`/`ValuesPayload` imports. Updated `source/cli.tsx` to stop passing `tools` to `runChatCommand`. JSON mode now supports bash tool execution (previously impossible).
+- Files changed: source/commands/chat.tsx (modified), source/types/output.ts (modified), source/cli.tsx (modified), .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - XO `max-depth` limits nesting to 4 levels — extract switch statements from deeply nested generator consumption loops into helper functions (e.g., `writeEventAsNdjson()`)
+  - In piped/JSON mode, bash consent handler should auto-deny (no interactive prompt available) — use `async () => ({approved: false, reason: 'Denied in non-interactive mode'})`
+  - The `ToolResultOutput` type was added to `source/types/output.ts` — it matches the core `ToolResult` shape with `toolCallId`, `content`, and optional `isError`
+  - Removing the `tools` prop from `ChatCommandProperties` is safe — the core runner handles tool registration internally via `enableBash` flag
+  - The `formatter.done()` in JSON mode constructs a synthetic `ValuesPayload` from the accumulated content since the core runner doesn't produce backend `values` events
+---
+
+## 2026-02-16 - US-022
+- What was implemented: Appended a `## Roadmap` section to `README.md` (before `## Configuration`, around line 388) documenting the 12-Factor Agent Core integration plan. Includes dependency graph (ASCII art), phase summaries (P0 through P3B), and recommended versioning table (0.2.0 through 0.5.0). Content sourced from `.claude/plans/feat-63/02.md`.
+- Files changed: README.md (modified)
+- **Learnings for future iterations:**
+  - README roadmap section is purely documentation — no code changes, no test changes, no lint issues
+  - The dependency graph ASCII art renders correctly in GitHub Markdown when wrapped in a code fence
+  - All 22 user stories are now complete — the 12-factor agent core module is fully implemented, integrated, and documented
+---
