@@ -385,6 +385,51 @@ If a published version has critical issues:
 - 2FA enabled for npm writes (recommended)
 - `NPM_TOKEN` secret configured for CI
 
+## Roadmap
+
+The 12-Factor Agent Core module (`source/core/`) implements agent primitives (schemas, agent loop, model interface, tool registry, bash tool, middleware, context builder, thread, prompt templates, error handling) based on [12-factor-agents](https://github.com/humanlayer/12-factor-agents) design principles. Integration into the CLI follows a dependency-ordered phased approach.
+
+### Dependency Graph
+
+```
+P0: Barrel Export ─────┬──> P1A: Event Emitter Adapter ──┐
+                       │                                  │
+                       ├──> P1B: Bash Consent Middleware ──┼──> P2A: Agent Runner Factory ──┬──> P3A: TUI Integration
+                       │                                  │                                │
+                       └──> P1C: Thread Persistence ──────┘                                └──> P3B: JSON Mode Integration
+```
+
+- P1A, P1B, P1C are independent of each other (parallelizable)
+- P2A requires all three Phase 1 items
+- P3A and P3B require P2A and can be done in parallel
+
+### Phase Summaries
+
+**Phase 0 — Barrel Export** creates `source/core/index.ts`, re-exporting all public symbols from the core module so that consumers import from a single entry point instead of individual files. This is the zero-cost prerequisite for all integration work.
+
+**Phase 1A — Event Emitter Adapter** adds `runAgentStream()` as an `AsyncGenerator<AgentEvent, AgentState>` to `source/core/agent.ts`, enabling the TUI to receive real-time events (model responses, tool calls, tool results) as they happen instead of waiting for the full loop to complete.
+
+**Phase 1B — Bash Consent Middleware** creates `source/core/bash-consent-middleware.ts` with a framework-agnostic `createBashConsentMiddleware(handler)` factory that integrates bash command approval into the core middleware system, reusing existing `validateCommand()` and `assessCommandRisk()` from `source/lib/local-tools/security.ts`.
+
+**Phase 1C — Thread Filesystem Persistence** creates `source/core/thread-store.ts` with a `ThreadStore` interface and `createFileThreadStore(dir)` factory so that the CLI's `-t <thread-id>` flag can load and continue previous conversations through the core module.
+
+**Phase 2A — Agent Runner Factory** creates `source/core/runner.ts` with `createAgentRunner(config)` that wires model, tools, middleware, and thread together from CLI-level options into a single entry point for agent execution.
+
+**Phase 3A — TUI Integration** rewrites `ChatCommandTui` in `source/commands/chat.tsx` to use the core runner, consolidating orchestration logic and eliminating ~150 lines of ad-hoc React-hook-based orchestration.
+
+**Phase 3B — JSON Mode Integration** rewrites `runJsonMode()` in `source/commands/chat.tsx` to use the core runner, enabling bash tool execution in JSON/piped mode (previously impossible).
+
+### Versioning
+
+| Phase | Version | Tag | Rationale |
+| --- | --- | --- | --- |
+| P0 | **0.2.0** | `cli-v0.2.0` | New public API surface (barrel export). Additive, no breaking changes. |
+| P1A+P1B+P1C | **0.3.0** | `cli-v0.3.0` | Streaming + consent + persistence primitives. All additive. |
+| P2A | **0.4.0** | `cli-v0.4.0` | Agent runner factory. Core apparatus fully wired. |
+| P3A+P3B | **0.5.0** | `cli-v0.5.0` | TUI and JSON mode use core. Behavioral parity, different internals. |
+
+Stay in `0.x` until the barrel export API is stable and documented for external consumers.
+
 ## Configuration
 
 Config is stored at `~/.ruska/auth.json`:
