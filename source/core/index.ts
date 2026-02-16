@@ -117,6 +117,12 @@ export {
 	deserializeThread,
 } from './thread.js';
 
+// Thread persistence
+export {
+	type ThreadStore,
+	createFileThreadStore,
+} from './thread-store.js';
+
 // Prompt manager
 export {
 	renderPrompt,

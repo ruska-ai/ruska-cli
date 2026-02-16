@@ -335,7 +335,7 @@
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 1C — blocked by US-015. Independent of US-016 and US-017. Reuses thread.serialize() and deserializeThread() from source/core/thread.ts."
     },
     {
