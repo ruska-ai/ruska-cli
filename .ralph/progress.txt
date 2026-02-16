@@ -171,3 +171,14 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - `handleError` creates `CompactError` via `compactify()` which sets `recoverable` based on attempt vs maxAttempts — this drives whether `reduce()` keeps `running` or transitions to `error`
   - Middleware hooks are called at appropriate points: `runOnEvent` after state transitions, `runBeforeModel` before model invocation, `runBeforeToolExecution` before tool execution (can skip), `runAfterToolExecution` after tool execution, `runOnError` on errors
 ---
+
+## 2026-02-16 - US-013
+- What was implemented: Created `source/core/index.ts` barrel export re-exporting all public API from all 11 core modules (schemas, agent, model, tool, bash-tool, middleware, context, thread, prompt, errors, human). Verified build, lint (no new errors), all 364 tests pass, and typecheck passes.
+- Files changed: source/core/index.ts (new)
+- **Learnings for future iterations:**
+  - Barrel export follows `source/types/index.ts` pattern: grouped re-exports with section comments
+  - Use `type` keyword for type-only exports in barrel: `export { type Foo, bar } from './module.js'`
+  - Pre-existing lint errors in `source/core/examples/` are not from core module code — verify via `npx xo source/core/index.ts` to check only new files
+  - The ESM `.js` extension is required in all import paths (e.g., `'./schemas.js'`)
+  - All 11 test files (core-schemas, core-middleware, core-errors, core-prompt, core-thread, core-context, core-tool, core-bash-tool, core-human, core-model, core-agent) plus existing tests pass together (364 total)
+---

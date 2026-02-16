@@ -238,7 +238,7 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Depends on all prior stories. Final integration check."
     },
     {
