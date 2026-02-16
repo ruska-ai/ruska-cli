@@ -17,3 +17,7 @@ progress.txt
 # Defensive patterns
 **/node_modules/
 **/.next/
+**/.cache/
+**/dist/
+**/build/
+**/.worktrees/

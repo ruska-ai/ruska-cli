@@ -278,3 +278,12 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - Removing the `tools` prop from `ChatCommandProperties` is safe — the core runner handles tool registration internally via `enableBash` flag
   - The `formatter.done()` in JSON mode constructs a synthetic `ValuesPayload` from the accumulated content since the core runner doesn't produce backend `values` events
 ---
+
+## 2026-02-16 - US-022
+- What was implemented: Appended a `## Roadmap` section to `README.md` (before `## Configuration`, around line 388) documenting the 12-Factor Agent Core integration plan. Includes dependency graph (ASCII art), phase summaries (P0 through P3B), and recommended versioning table (0.2.0 through 0.5.0). Content sourced from `.claude/plans/feat-63/02.md`.
+- Files changed: README.md (modified)
+- **Learnings for future iterations:**
+  - README roadmap section is purely documentation — no code changes, no test changes, no lint issues
+  - The dependency graph ASCII art renders correctly in GitHub Markdown when wrapped in a code fence
+  - All 22 user stories are now complete — the 12-factor agent core module is fully implemented, integrated, and documented
+---
