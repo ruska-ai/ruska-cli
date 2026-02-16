@@ -203,3 +203,14 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - The barrel export has 138 lines covering schemas (45 symbols), agent (5), model (5), tool (4), bash-tool (3), middleware (3), context (3), thread (3), prompt (3), errors (3), human (3)
   - Always audit existing code before assuming new work is needed — the PRD notes "Supersedes US-013" but US-013 already covered the full scope
 ---
+
+## 2026-02-16 - US-016
+- What was implemented: Added `runAgentStream()` as an `AsyncGenerator<AgentEvent, AgentState>` to `source/core/agent.ts`. Refactored internal handlers (`handleModelCall`, `handleToolExecution`, `handleHumanContact`, `handleError`) to return `StepResult` (state + emittedEvents). Added `handleDone` and `handleFatalError` helpers. Rewrote `runAgent()` as a thin wrapper that drains the generator. Added `RunAgentStreamInput` type with optional `onEvent` callback. Updated barrel export in `source/core/index.ts`. Created `source/__tests__/core-agent-stream.test.ts` with 7 tests.
+- Files changed: source/core/agent.ts (modified), source/core/index.ts (modified), source/__tests__/core-agent-stream.test.ts (new)
+- **Learnings for future iterations:**
+  - `eslint-disable-next-line no-await-in-loop` only applies inside loop bodies — an await in an `if` block before the `while` loop does not need it
+  - XO `unicorn/prefer-set-has` requires using `Set.has()` instead of `Array.includes()` when checking membership across multiple values — convert `events.map(...)` to `new Set(events.map(...))`
+  - XO `unicorn/no-for-loop` rejects `for (let i = ...)` loops — use `for (const [index, item] of array.entries())` instead
+  - The `StepResult` pattern (returning both state and emitted events from handlers) cleanly separates state transitions from event emission for generator-based streaming
+  - `AsyncGenerator<AgentEvent, AgentState>` — yield type is `AgentEvent`, return type is `AgentState` (accessed via `result.value` when `result.done === true`)
+---

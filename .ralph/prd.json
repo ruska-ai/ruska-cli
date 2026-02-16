@@ -291,7 +291,7 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 1A — blocked by US-015. Independent of US-017 and US-018. Modifies agent.ts to add streaming generator."
     },
     {

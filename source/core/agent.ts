@@ -36,6 +36,23 @@ export type RunAgentInput = {
 };
 
 // ---------------------------------------------------------------------------
+// RunAgentStreamInput — extends RunAgentInput with optional onEvent callback
+// ---------------------------------------------------------------------------
+
+export type RunAgentStreamInput = RunAgentInput & {
+	onEvent?: (event: AgentEvent) => void;
+};
+
+// ---------------------------------------------------------------------------
+// StepResult — internal type for handler returns with emitted events
+// ---------------------------------------------------------------------------
+
+type StepResult = {
+	state: AgentState;
+	emittedEvents: AgentEvent[];
+};
+
+// ---------------------------------------------------------------------------
 // initialState — create a validated idle state from config
 // ---------------------------------------------------------------------------
 
@@ -277,11 +294,13 @@ function findPendingToolCall(state: AgentState): ToolCall | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// runAgent — imperative loop driver
+// runAgentStream — async generator that yields events in real-time
 // ---------------------------------------------------------------------------
 
-export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
-	const {input, model, toolRegistry, config, middleware, maxMessages} = agentInput;
+export async function * runAgentStream(
+	agentInput: RunAgentStreamInput,
+): AsyncGenerator<AgentEvent, AgentState> {
+	const {input, model, toolRegistry, config, middleware, maxMessages, onEvent} = agentInput;
 	agentConfigSchema.parse(config);
 
 	let state = initialState(config);
@@ -297,6 +316,12 @@ export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
 		await middleware.runOnEvent(userEvent, state);
 	}
 
+	if (onEvent) {
+		onEvent(userEvent);
+	}
+
+	yield userEvent;
+
 	// Main loop
 	let loopGuard = 0;
 	const maxLoop = (config.maxIterations + config.maxErrors + 1) * 10;
@@ -309,10 +334,11 @@ export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
 
 		const action = nextAction(state, config);
 
+		let step: StepResult;
 		switch (action.type) {
 			case 'call_model': {
 				// eslint-disable-next-line no-await-in-loop
-				state = await handleModelCall({
+				step = await handleModelCall({
 					state, config, model, toolRegistry, middleware, maxMessages,
 				});
 				break;
@@ -320,7 +346,7 @@ export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
 
 			case 'execute_tool': {
 				// eslint-disable-next-line no-await-in-loop
-				state = await handleToolExecution(
+				step = await handleToolExecution(
 					state, action.toolCall!, toolRegistry, middleware,
 				);
 				break;
@@ -328,52 +354,58 @@ export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
 
 			case 'contact_human': {
 				// eslint-disable-next-line no-await-in-loop
-				state = await handleHumanContact(state, action, agentInput);
+				step = await handleHumanContact(state, action, agentInput);
 				break;
 			}
 
 			case 'done': {
-				const doneEvent: AgentEvent = {
-					type: 'done',
-					reason: action.reason ?? 'Complete',
-					timestamp: Date.now(),
-				};
-				state = reduce(state, doneEvent);
+				step = handleDone(state, action, config, middleware);
 				if (middleware) {
+					const doneEvt = step.emittedEvents[0]!;
 					// eslint-disable-next-line no-await-in-loop
-					await middleware.runOnEvent(doneEvent, state);
+					await middleware.runOnEvent(doneEvt, step.state);
 				}
 
 				break;
 			}
 
 			case 'error': {
-				const fatalError = compactify(
-					new Error(action.reason ?? 'Unknown error'),
-					config.maxErrors + 1,
-					config.maxErrors,
-				);
-				const errorEvent: AgentEvent = {
-					type: 'error',
-					error: fatalError,
-					timestamp: Date.now(),
-				};
-				state = reduce(state, errorEvent);
-				if (middleware) {
-					// eslint-disable-next-line no-await-in-loop
-					await middleware.runOnError(fatalError, state);
-					// eslint-disable-next-line no-await-in-loop
-					await middleware.runOnEvent(errorEvent, state);
-				}
-
+				// eslint-disable-next-line no-await-in-loop
+				step = await handleFatalError(state, action, config, middleware);
 				break;
 			}
 
-			// No default
+			default: {
+				step = {state, emittedEvents: []};
+			}
+		}
+
+		state = step.state;
+		for (const event of step.emittedEvents) {
+			if (onEvent) {
+				onEvent(event);
+			}
+
+			yield event;
 		}
 	}
 
 	return state;
+}
+
+// ---------------------------------------------------------------------------
+// runAgent — thin wrapper that drains the generator (no breaking changes)
+// ---------------------------------------------------------------------------
+
+export async function runAgent(agentInput: RunAgentInput): Promise<AgentState> {
+	const generator = runAgentStream(agentInput);
+	let result = await generator.next();
+	while (!result.done) {
+		// eslint-disable-next-line no-await-in-loop
+		result = await generator.next();
+	}
+
+	return result.value;
 }
 
 // ---------------------------------------------------------------------------
@@ -389,7 +421,7 @@ type ModelCallInput = {
 	maxMessages?: number;
 };
 
-async function handleModelCall(callInput: ModelCallInput): Promise<AgentState> {
+async function handleModelCall(callInput: ModelCallInput): Promise<StepResult> {
 	const {state, config, model, toolRegistry, middleware, maxMessages} = callInput;
 	try {
 		// Build context from events
@@ -424,7 +456,7 @@ async function handleModelCall(callInput: ModelCallInput): Promise<AgentState> {
 			await middleware.runOnEvent(event, newState);
 		}
 
-		return newState;
+		return {state: newState, emittedEvents: [event]};
 	} catch (error: unknown) {
 		return handleError(state, error, config, middleware);
 	}
@@ -435,7 +467,9 @@ async function handleToolExecution(
 	toolCall: ToolCall,
 	toolRegistry: ToolRegistry,
 	middleware: MiddlewareStack | undefined,
-): Promise<AgentState> {
+): Promise<StepResult> {
+	const emittedEvents: AgentEvent[] = [];
+
 	// Emit tool_call event
 	const callEvent: AgentEvent = {
 		type: 'tool_call',
@@ -443,6 +477,7 @@ async function handleToolExecution(
 		timestamp: Date.now(),
 	};
 	let currentState = reduce(state, callEvent);
+	emittedEvents.push(callEvent);
 	if (middleware) {
 		await middleware.runOnEvent(callEvent, currentState);
 	}
@@ -464,8 +499,9 @@ async function handleToolExecution(
 				timestamp: Date.now(),
 			};
 			currentState = reduce(currentState, skipResult);
+			emittedEvents.push(skipResult);
 			await middleware.runOnEvent(skipResult, currentState);
-			return currentState;
+			return {state: currentState, emittedEvents};
 		}
 	}
 
@@ -479,19 +515,20 @@ async function handleToolExecution(
 		timestamp: Date.now(),
 	};
 	currentState = reduce(currentState, resultEvent);
+	emittedEvents.push(resultEvent);
 	if (middleware) {
 		await middleware.runAfterToolExecution(toolCall, toolResult, currentState);
 		await middleware.runOnEvent(resultEvent, currentState);
 	}
 
-	return currentState;
+	return {state: currentState, emittedEvents};
 }
 
 async function handleHumanContact(
 	state: AgentState,
 	action: AgentAction,
 	agentInput: RunAgentInput,
-): Promise<AgentState> {
+): Promise<StepResult> {
 	if (!agentInput.humanContactHandler || !action.humanRequest) {
 		// No handler available — mark as done
 		const doneEvent: AgentEvent = {
@@ -499,7 +536,7 @@ async function handleHumanContact(
 			reason: 'Human contact requested but no handler available',
 			timestamp: Date.now(),
 		};
-		return reduce(state, doneEvent);
+		return {state: reduce(state, doneEvent), emittedEvents: [doneEvent]};
 	}
 
 	const response = await agentInput.humanContactHandler(action.humanRequest);
@@ -510,7 +547,46 @@ async function handleHumanContact(
 		message: {role: 'user', content: response},
 		timestamp: Date.now(),
 	};
-	return reduce(state, userEvent);
+	return {state: reduce(state, userEvent), emittedEvents: [userEvent]};
+}
+
+function handleDone(
+	state: AgentState,
+	action: AgentAction,
+	_config: AgentConfig,
+	_middleware: MiddlewareStack | undefined,
+): StepResult {
+	const doneEvent: AgentEvent = {
+		type: 'done',
+		reason: action.reason ?? 'Complete',
+		timestamp: Date.now(),
+	};
+	return {state: reduce(state, doneEvent), emittedEvents: [doneEvent]};
+}
+
+async function handleFatalError(
+	state: AgentState,
+	action: AgentAction,
+	config: AgentConfig,
+	middleware: MiddlewareStack | undefined,
+): Promise<StepResult> {
+	const fatalError = compactify(
+		new Error(action.reason ?? 'Unknown error'),
+		config.maxErrors + 1,
+		config.maxErrors,
+	);
+	const errorEvent: AgentEvent = {
+		type: 'error',
+		error: fatalError,
+		timestamp: Date.now(),
+	};
+	const newState = reduce(state, errorEvent);
+	if (middleware) {
+		await middleware.runOnError(fatalError, newState);
+		await middleware.runOnEvent(errorEvent, newState);
+	}
+
+	return {state: newState, emittedEvents: [errorEvent]};
 }
 
 async function handleError(
@@ -518,7 +594,7 @@ async function handleError(
 	error: unknown,
 	config: AgentConfig,
 	middleware: MiddlewareStack | undefined,
-): Promise<AgentState> {
+): Promise<StepResult> {
 	const compactError = compactify(
 		error,
 		state.errorCount + 1,
@@ -537,5 +613,5 @@ async function handleError(
 		await middleware.runOnEvent(event, newState);
 	}
 
-	return newState;
+	return {state: newState, emittedEvents: [event]};
 }

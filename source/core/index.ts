@@ -64,10 +64,12 @@ export {
 // Agent loop
 export {
 	type RunAgentInput,
+	type RunAgentStreamInput,
 	initialState,
 	reduce,
 	nextAction,
 	runAgent,
+	runAgentStream,
 } from './agent.js';
 
 // Model interface
