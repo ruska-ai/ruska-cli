@@ -214,3 +214,14 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - The `StepResult` pattern (returning both state and emitted events from handlers) cleanly separates state transitions from event emission for generator-based streaming
   - `AsyncGenerator<AgentEvent, AgentState>` — yield type is `AgentEvent`, return type is `AgentState` (accessed via `result.value` when `result.done === true`)
 ---
+
+## 2026-02-16 - US-017
+- What was implemented: Created `source/core/bash-consent-middleware.ts` with `createBashConsentMiddleware(handler)` factory, `ConsentHandler` type, and `ConsentDecision` type. The middleware intercepts bash tool calls via `beforeToolExecution` hook — blocked commands return false immediately, non-blocked commands delegate to the consent handler, and non-bash tools pass through. Reuses `validateCommand()` and `assessCommandRisk()` from `source/lib/local-tools/security.ts`. Created `source/__tests__/core-bash-consent-middleware.test.ts` with 13 tests. Updated `source/core/index.ts` barrel export.
+- Files changed: source/core/bash-consent-middleware.ts (new), source/__tests__/core-bash-consent-middleware.test.ts (new), source/core/index.ts (modified)
+- **Learnings for future iterations:**
+  - XO `@typescript-eslint/consistent-type-assertions` rejects `as ConsentDecision` casts — use explicit return type annotation `(): Promise<ConsentDecision> =>` instead
+  - The `CommandRisk` type is re-exported from `source/lib/local-tools/types.js` — import it from there, not from security.ts
+  - Middleware that only uses `beforeToolExecution` leaves all other hooks as `undefined` — tests should verify this to ensure no unintended side effects
+  - The `validateCommand()` result discriminates on `valid` field — when `valid: true`, `warnings` is available; when `valid: false`, `reason` is available
+  - Simple middleware (~65 lines) that delegates to existing infrastructure (security.ts) is the right pattern — no need to re-implement validation logic
+---

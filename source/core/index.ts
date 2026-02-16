@@ -137,3 +137,10 @@ export {
 	humanContactToolDefinition,
 	parseHumanContactArgs,
 } from './human.js';
+
+// Bash consent middleware
+export {
+	type ConsentDecision,
+	type ConsentHandler,
+	createBashConsentMiddleware,
+} from './bash-consent-middleware.js';

@@ -314,7 +314,7 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 1B — blocked by US-015. Independent of US-016 and US-018. Reuses validateCommand() and assessCommandRisk() from source/lib/local-tools/security.ts."
     },
     {
