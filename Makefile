@@ -9,7 +9,7 @@ params:
 
 # Run the Ralph autonomous agent loop using Claude Code
 ralph:
-	bash .ralph/ralph.sh --tool claude $(MAX_ITERATIONS)
+	@unset CLAUDECODE; bash .ralph/ralph.sh --tool claude $(MAX_ITERATIONS)
 
 # Archive current prd.json and progress.txt into dated directory
 archive:

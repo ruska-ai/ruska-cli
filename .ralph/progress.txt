@@ -32,6 +32,8 @@ Started: Sat Feb 14 19:14:28 MST 2026
 - Mock `StreamServiceInterface` in tests using async generator: `async function*() { for (const e of events) yield e; }`
 - XO `max-params` limits functions to 4 parameters — group 5+ params into an options/input object
 - `eslint-disable-next-line no-await-in-loop` only applies inside loop bodies — adding it outside a loop triggers `eslint-comments/no-unused-disable`
+- XO `unicorn/prefer-top-level-await` rejects `main().catch(console.error)` — use eslint-disable and explicit `(error: unknown) => {}` callback
+- XO `@typescript-eslint/use-unknown-in-catch-callback-variable` requires `: unknown` typing on catch callback params
 ---
 
 ## 2026-02-14 - US-001
@@ -181,4 +183,14 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - Pre-existing lint errors in `source/core/examples/` are not from core module code — verify via `npx xo source/core/index.ts` to check only new files
   - The ESM `.js` extension is required in all import paths (e.g., `'./schemas.js'`)
   - All 11 test files (core-schemas, core-middleware, core-errors, core-prompt, core-thread, core-context, core-tool, core-bash-tool, core-human, core-model, core-agent) plus existing tests pass together (364 total)
+---
+
+## 2026-02-16 - US-014
+- What was implemented: Verified `source/core/README.md` (created in prior iteration) meets all acceptance criteria. Fixed 22 lint errors in `source/core/examples/` to make `npm run lint` pass cleanly. Errors were: `capitalized-comments` (lowercase inline comments), `unicorn/prefer-top-level-await` (`main().catch()` pattern), and `@typescript-eslint/use-unknown-in-catch-callback-variable` (`console.error` as catch callback).
+- Files changed: source/core/examples/01-tools-and-registry.ts, source/core/examples/03-thread-and-context.ts, source/core/examples/04-middleware.ts, source/core/examples/05-reducer.ts, source/core/examples/06-agent-loop.ts, source/core/examples/07-errors.ts, source/core/examples/08-validation.ts
+- **Learnings for future iterations:**
+  - XO `unicorn/prefer-top-level-await` rejects `main().catch(console.error)` — use `// eslint-disable-next-line unicorn/prefer-top-level-await` and wrap the callback: `main().catch((error: unknown) => { console.error(error); })`
+  - XO `@typescript-eslint/use-unknown-in-catch-callback-variable` requires explicit `unknown` typing on catch callback parameters
+  - When creating example files, always capitalize inline comments to satisfy `capitalized-comments` rule
+  - All 14 user stories are now complete — the 12-factor agent core module is fully implemented and documented
 ---
