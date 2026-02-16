@@ -194,3 +194,12 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - When creating example files, always capitalize inline comments to satisfy `capitalized-comments` rule
   - All 14 user stories are now complete — the 12-factor agent core module is fully implemented and documented
 ---
+
+## 2026-02-16 - US-015
+- What was implemented: Verified existing barrel export `source/core/index.ts` (created in US-013) already re-exports all 86 public symbols from all 11 core modules. Ran full quality checks — build, lint, test (364 pass), typecheck all pass. Marked US-015 as complete.
+- Files changed: .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - US-015 was fully satisfied by the US-013 barrel export implementation — no code changes needed
+  - The barrel export has 138 lines covering schemas (45 symbols), agent (5), model (5), tool (4), bash-tool (3), middleware (3), context (3), thread (3), prompt (3), errors (3), human (3)
+  - Always audit existing code before assuming new work is needed — the PRD notes "Supersedes US-013" but US-013 already covered the full scope
+---

@@ -272,7 +272,7 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0 — blocks everything. Supersedes US-013 barrel export scope. Must export all symbols from all 11 core modules."
     },
     {
