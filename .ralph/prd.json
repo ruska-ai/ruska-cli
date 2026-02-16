@@ -258,6 +258,166 @@
 			"priority": 14,
 			"passes": false,
 			"notes": "Depends on US-013 (barrel export) so all public API is finalized before documenting. Last story -- documents the completed module."
+		},
+		{
+			"id": "US-015",
+			"title": "Create Barrel Export",
+			"description": "As a developer, I want a single entry point for the core module so that all consumers import from source/core/index.ts instead of individual files.",
+			"acceptanceCriteria": [
+				"Create source/core/index.ts (~50 lines)",
+				"Re-export all public symbols: types/schemas/validators from schemas.ts, runAgent/initialState/reduce/nextAction from agent.ts, ModelInterface/createStreamModel from model.ts, ToolRegistry/createToolRegistry from tool.ts, registerBashTool from bash-tool.ts, createMiddlewareStack from middleware.ts, buildContext from context.ts, createThread/deserializeThread from thread.ts, renderPrompt/createPromptTemplate from prompt.ts, compactify/isRecoverable/formatForContext from errors.ts, humanContactToolDefinition/parseHumanContactArgs from human.ts",
+				"import { runAgent, createToolRegistry } from '../core/index.js' compiles successfully",
+				"npm run build compiles without errors",
+				"npm run test:unit passes (no regressions)",
+				"Typecheck passes"
+			],
+			"priority": 15,
+			"passes": false,
+			"notes": "Phase 0 — blocks everything. Supersedes US-013 barrel export scope. Must export all symbols from all 11 core modules."
+		},
+		{
+			"id": "US-016",
+			"title": "Add Event Emitter Adapter (runAgentStream)",
+			"description": "As a developer, I want runAgentStream() as an AsyncGenerator<AgentEvent, AgentState> so that the TUI receives real-time events as they happen instead of waiting for the full loop to complete.",
+			"acceptanceCriteria": [
+				"Modify source/core/agent.ts — add runAgentStream() (~80 lines)",
+				"runAgentStream() is an AsyncGenerator that yields each AgentEvent as it occurs and returns the final AgentState",
+				"runAgent() becomes a thin wrapper that consumes the generator and returns the final state (no breaking changes)",
+				"New type RunAgentStreamInput extends RunAgentInput with optional onEvent callback",
+				"Create source/__tests__/core-agent-stream.test.ts with tests for: mock model yields tool_call and tool_result events before done, existing runAgent behavior unchanged",
+				"Modify source/core/index.ts — export runAgentStream and RunAgentStreamInput",
+				"Existing source/__tests__/core-agent.test.ts passes unchanged (no regression)",
+				"npm run build compiles without errors",
+				"Typecheck passes"
+			],
+			"priority": 16,
+			"passes": false,
+			"notes": "Phase 1A — blocked by US-015. Independent of US-017 and US-018. Modifies agent.ts to add streaming generator."
+		},
+		{
+			"id": "US-017",
+			"title": "Build Bash Consent Middleware",
+			"description": "As a developer, I want a framework-agnostic bash consent middleware so that bash command approval flows through the core middleware system instead of being hardcoded into React hooks.",
+			"acceptanceCriteria": [
+				"Create source/core/bash-consent-middleware.ts (~70 lines)",
+				"Export createBashConsentMiddleware(handler) factory function",
+				"ConsentHandler type: (command: string, risk: CommandRisk, warnings: string[]) => Promise<ConsentDecision>",
+				"ConsentDecision type: { approved: true } | { approved: false; reason: string }",
+				"Middleware activates only for toolCall.name === 'bash'",
+				"Non-bash tools pass through without calling the handler",
+				"Reuse validateCommand() and assessCommandRisk() from source/lib/local-tools/security.ts",
+				"Blocked commands (per validateCommand()) return false (triggers skipped by middleware in agent.ts)",
+				"Non-blocked commands delegate approval decision to the ConsentHandler",
+				"Create source/__tests__/core-bash-consent-middleware.test.ts with tests for: blocked commands, approved commands, denied commands, non-bash tools passthrough",
+				"Modify source/core/index.ts — export createBashConsentMiddleware, ConsentHandler, ConsentDecision",
+				"npm run build compiles without errors",
+				"Typecheck passes"
+			],
+			"priority": 17,
+			"passes": false,
+			"notes": "Phase 1B — blocked by US-015. Independent of US-016 and US-018. Reuses validateCommand() and assessCommandRisk() from source/lib/local-tools/security.ts."
+		},
+		{
+			"id": "US-018",
+			"title": "Implement Thread Filesystem Persistence",
+			"description": "As a developer, I want threads to persist to disk so that the CLI's -t <thread-id> flag can load and continue previous conversations through the core module.",
+			"acceptanceCriteria": [
+				"Create source/core/thread-store.ts (~70 lines)",
+				"Export ThreadStore interface with methods: save(id, thread), load(id), list(), delete(id)",
+				"Export createFileThreadStore(dir) factory with default dir ~/.ruska/threads/",
+				"save() uses thread.serialize() from source/core/thread.ts to write JSON to disk",
+				"load() uses deserializeThread() from source/core/thread.ts to hydrate from JSON, returns null for non-existent IDs",
+				"list() returns an array of thread ID strings from the directory",
+				"delete() removes the thread file from disk",
+				"Create source/__tests__/core-thread-store.test.ts using a temp directory for isolation, with tests for: roundtrip save/load, load non-existent returns null, list returns IDs, delete removes thread",
+				"Modify source/core/index.ts — export ThreadStore, createFileThreadStore",
+				"npm run build compiles without errors",
+				"Typecheck passes"
+			],
+			"priority": 18,
+			"passes": false,
+			"notes": "Phase 1C — blocked by US-015. Independent of US-016 and US-017. Reuses thread.serialize() and deserializeThread() from source/core/thread.ts."
+		},
+		{
+			"id": "US-019",
+			"title": "Create Agent Runner Factory",
+			"description": "As a developer, I want a single createAgentRunner(config) factory that wires model, tools, middleware, and thread together from CLI-level options so that CLI commands have a single entry point for agent execution.",
+			"acceptanceCriteria": [
+				"Create source/core/runner.ts (~120 lines)",
+				"Export createAgentRunner(config) factory function",
+				"AgentRunnerConfig type includes: service (StreamServiceInterface), model (optional string), assistantId (optional string), threadId (optional string), systemPrompt (string), maxIterations (number), maxErrors (number), enableBash (boolean), autoApprove (boolean), bashTimeout (number), consentHandler (optional ConsentHandler), threadStore (optional ThreadStore)",
+				"Internally creates ToolRegistry (optionally registers bash tool via registerBashTool)",
+				"Internally creates MiddlewareStack (optionally adds consent middleware via createBashConsentMiddleware)",
+				"Internally creates ModelInterface via createStreamModel()",
+				"Calls runAgentStream() and returns the async generator",
+				"If threadId provided, loads thread from ThreadStore and seeds events",
+				"If autoApprove is true, bypasses consent handler for bash commands",
+				"Create source/__tests__/core-runner.test.ts with tests for: bash-enabled + consent handler called, auto-approve bypasses prompt, thread ID loads and continues, non-bash mode has no bash tool",
+				"Modify source/core/index.ts — export createAgentRunner, AgentRunnerConfig",
+				"npm run build compiles without errors",
+				"Typecheck passes"
+			],
+			"priority": 19,
+			"passes": false,
+			"notes": "Phase 2A — blocked by US-016, US-017, US-018. Wires all Phase 1 primitives together. Reuses createStreamModel(), registerBashTool(), createBashConsentMiddleware(), createFileThreadStore()."
+		},
+		{
+			"id": "US-020",
+			"title": "Integrate Core Runner into TUI (chat.tsx)",
+			"description": "As a developer, I want ChatCommandTui in chat.tsx to use the core runner so that orchestration logic is consolidated in core and ~150 lines of ad-hoc code are eliminated.",
+			"acceptanceCriteria": [
+				"Modify source/commands/chat.tsx — rewrite ChatCommandTui (lines ~153-529)",
+				"Call createAgentRunner() with a consentHandler that resolves via React state (prompts user, resolves Promise on approve/deny)",
+				"Iterate the event stream from the runner, updating React state on each event for rendering",
+				"Keep existing presentation components (BashConsentPrompt, BashBlockedPrompt, BashResultDisplay) — they are pure UI",
+				"Remove: useBashConsent hook usage, manual tool call detection useEffect, continueConversation(), processedToolCalls state, continuationRequest state",
+				"Net reduction of ~150 lines in chat.tsx",
+				"npm run build compiles without errors",
+				"npm run test:unit passes",
+				"Manual test: ruska chat 'list files' --bash — consent prompt shown, execution works",
+				"Manual test: ruska chat 'list files' --bash --auto-approve — auto-approve works",
+				"Manual test: ruska chat 'follow up' -t <thread-id> — continuation works",
+				"Manual test: ruska chat 'hello' — normal streaming works",
+				"Typecheck passes"
+			],
+			"priority": 20,
+			"passes": false,
+			"notes": "Phase 3A — blocked by US-019. Major rewrite of ChatCommandTui. Independent of US-021. Keep presentation components, replace orchestration logic."
+		},
+		{
+			"id": "US-021",
+			"title": "Integrate Core Runner into JSON Mode (chat.tsx)",
+			"description": "As a developer, I want runJsonMode() in chat.tsx to use the core runner so that JSON mode benefits from core's tool execution and bash support instead of being a completely separate code path.",
+			"acceptanceCriteria": [
+				"Modify source/commands/chat.tsx — rewrite runJsonMode() (lines ~535-623)",
+				"Replace with core runner usage, mapping AgentEvent types to NDJSON format: model_response -> {type: chunk}, done -> {type: done}, tool_result -> {type: tool_result}",
+				"Consent handler: auto-approve if --auto-approve, otherwise deny (no interactive prompt in piped mode)",
+				"Net reduction of ~40 lines",
+				"Bash tool execution now works in JSON mode (currently impossible)",
+				"npm run build compiles without errors",
+				"npm run test:unit passes",
+				"Manual test: ruska chat 'list files' --json --bash --auto-approve | jq . — NDJSON with tool results",
+				"Typecheck passes"
+			],
+			"priority": 21,
+			"passes": false,
+			"notes": "Phase 3B — blocked by US-019. Independent of US-020. Enables bash in JSON/piped mode."
+		},
+		{
+			"id": "US-022",
+			"title": "Write Integration Roadmap into README",
+			"description": "As a developer, I want a Roadmap section in the project README so that the integration plan, dependency graph, and versioning strategy are documented for contributors.",
+			"acceptanceCriteria": [
+				"Append a ## Roadmap section to README.md (before the ## Configuration section, around line 388)",
+				"Include the dependency graph showing P0 -> P1A/P1B/P1C -> P2A -> P3A/P3B",
+				"Document each phase with a one-paragraph summary",
+				"Include the recommended versioning table (P0=0.2.0, P1*=0.3.0, P2A=0.4.0, P3*=0.5.0)",
+				"npm run lint passes",
+				"Typecheck passes"
+			],
+			"priority": 22,
+			"passes": false,
+			"notes": "Can be done at any time. Documents the integration roadmap from .claude/plans/feat-63/02.md into the project README."
 		}
 	]
 }
