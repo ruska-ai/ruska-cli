@@ -13,19 +13,19 @@ function main() {
 	// --- 1. Normalize an Error object ---
 	const err1 = compactify(new Error('Connection timeout'), 1, 3);
 	console.log('From Error:', err1);
-	console.log('Recoverable?', isRecoverable(err1)); // true (attempt 1 < maxAttempts 3)
+	console.log('Recoverable?', isRecoverable(err1)); // True (attempt 1 < maxAttempts 3)
 	console.log('Context:', formatForContext(err1));
 	// => "Error: Connection timeout | Attempt 1/3 | Recoverable"
 
 	// --- 2. Normalize a string ---
 	const err2 = compactify('Something went wrong', 2, 3);
 	console.log('\nFrom string:', err2);
-	console.log('Recoverable?', isRecoverable(err2)); // true
+	console.log('Recoverable?', isRecoverable(err2)); // True
 
 	// --- 3. Normalize an unknown value ---
 	const err3 = compactify(42, 3, 3);
 	console.log('\nFrom unknown:', err3);
-	console.log('Recoverable?', isRecoverable(err3)); // false (attempt 3 >= maxAttempts 3)
+	console.log('Recoverable?', isRecoverable(err3)); // False (attempt 3 >= maxAttempts 3)
 	console.log('Context:', formatForContext(err3));
 	// => "Error: Unknown error | Attempt 3/3 | Fatal"
 

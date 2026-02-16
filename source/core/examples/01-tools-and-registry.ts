@@ -75,8 +75,11 @@ async function main() {
 	// => { toolCallId: 'call_3', content: 'Connection refused', isError: true }
 
 	// --- 6. Check if a tool exists ---
-	console.log('Has bash?', registry.has('bash')); // true
-	console.log('Has foo?', registry.has('foo'));    // false
+	console.log('Has bash?', registry.has('bash')); // True
+	console.log('Has foo?', registry.has('foo'));    // False
 }
 
-main().catch(console.error);
+// eslint-disable-next-line unicorn/prefer-top-level-await
+main().catch((error: unknown) => {
+	console.error(error);
+});

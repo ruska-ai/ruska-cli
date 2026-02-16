@@ -86,7 +86,7 @@ function main() {
 
 	console.log('\n--- Windowed Context (max 3 + system) ---');
 	console.log('Message count:', windowed.length);
-	// system + last 3 non-system messages
+	// System + last 3 non-system messages
 
 	// --- 6. Token estimation ---
 	const tokens = estimateTokens(context);

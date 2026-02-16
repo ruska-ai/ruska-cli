@@ -115,4 +115,7 @@ async function main() {
 	}
 }
 
-main().catch(console.error);
+// eslint-disable-next-line unicorn/prefer-top-level-await
+main().catch((error: unknown) => {
+	console.error(error);
+});

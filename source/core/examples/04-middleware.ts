@@ -88,7 +88,7 @@ async function main() {
 		{id: 'tc_1', name: 'bash', args: {command: 'ls -la'}},
 		mockState,
 	);
-	console.log('Allowed:', allowed); // true
+	console.log('Allowed:', allowed); // True
 
 	// Simulate beforeToolExecution (dangerous command)
 	console.log('\n--- beforeToolExecution (blocked) ---');
@@ -96,7 +96,7 @@ async function main() {
 		{id: 'tc_2', name: 'bash', args: {command: 'rm -rf /'}},
 		mockState,
 	);
-	console.log('Allowed:', blocked); // false
+	console.log('Allowed:', blocked); // False
 
 	// Simulate onError
 	console.log('\n--- onError ---');
@@ -112,4 +112,7 @@ async function main() {
 	);
 }
 
-main().catch(console.error);
+// eslint-disable-next-line unicorn/prefer-top-level-await
+main().catch((error: unknown) => {
+	console.error(error);
+});

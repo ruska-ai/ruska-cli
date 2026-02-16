@@ -19,8 +19,8 @@ function main() {
 
 	// --- 1. Start with initial idle state ---
 	let state: AgentState = initialState(config);
-	console.log('Initial status:', state.status);          // idle
-	console.log('Next action:', nextAction(state, config)); // { type: 'call_model' }
+	console.log('Initial status:', state.status);          // Idle
+	console.log('Next action:', nextAction(state, config)); // Call_model
 
 	// --- 2. User sends input ---
 	const userEvent: AgentEvent = {
@@ -29,8 +29,8 @@ function main() {
 		timestamp: Date.now(),
 	};
 	state = reduce(state, userEvent);
-	console.log('\nAfter user_input:', state.status);       // running
-	console.log('Next action:', nextAction(state, config));  // { type: 'call_model' }
+	console.log('\nAfter user_input:', state.status);       // Running
+	console.log('Next action:', nextAction(state, config));  // Call_model
 
 	// --- 3. Model responds with a tool call ---
 	const modelEvent: AgentEvent = {
@@ -42,9 +42,9 @@ function main() {
 		timestamp: Date.now(),
 	};
 	state = reduce(state, modelEvent);
-	console.log('\nAfter model_response:', state.status);    // running
+	console.log('\nAfter model_response:', state.status);    // Running
 	console.log('Iterations:', state.iterations);             // 1
-	console.log('Next action:', nextAction(state, config));   // { type: 'execute_tool', toolCall: ... }
+	console.log('Next action:', nextAction(state, config));   // Execute_tool
 
 	// --- 4. Tool call emitted ---
 	const toolCallEvent: AgentEvent = {
@@ -61,8 +61,8 @@ function main() {
 		timestamp: Date.now(),
 	};
 	state = reduce(state, toolResultEvent);
-	console.log('\nAfter tool_result:', state.status);       // running
-	console.log('Next action:', nextAction(state, config));   // { type: 'call_model' }
+	console.log('\nAfter tool_result:', state.status);       // Running
+	console.log('Next action:', nextAction(state, config));   // Call_model
 
 	// --- 6. Model responds with final answer (done) ---
 	const doneModelEvent: AgentEvent = {
@@ -71,9 +71,9 @@ function main() {
 		timestamp: Date.now(),
 	};
 	state = reduce(state, doneModelEvent);
-	console.log('\nAfter done model_response:', state.status); // running
+	console.log('\nAfter done model_response:', state.status); // Running
 	console.log('Iterations:', state.iterations);               // 2
-	console.log('Next action:', nextAction(state, config));     // { type: 'done', reason: 'Model signaled done' }
+	console.log('Next action:', nextAction(state, config));     // Done
 
 	// --- 7. Done event finalizes state ---
 	const doneEvent: AgentEvent = {
@@ -82,9 +82,9 @@ function main() {
 		timestamp: Date.now(),
 	};
 	state = reduce(state, doneEvent);
-	console.log('\nFinal status:', state.status);              // done
+	console.log('\nFinal status:', state.status);              // Done
 	console.log('Total events:', state.events.length);          // 6
-	console.log('Next action:', nextAction(state, config));     // { type: 'done' }
+	console.log('Next action:', nextAction(state, config));     // Done
 
 	// --- 8. Demonstrate error limits ---
 	console.log('\n--- Error limit demo ---');

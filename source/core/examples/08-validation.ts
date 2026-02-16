@@ -26,7 +26,7 @@ function main() {
 	console.log('Valid tool call:', toolCall);
 
 	try {
-		validateToolCall({id: 123, name: 'bash'}); // id should be string, args missing
+		validateToolCall({id: 123, name: 'bash'}); // Id should be string, args missing
 	} catch (error) {
 		console.log('Validation error:', (error as Error).message.slice(0, 100));
 	}
@@ -70,7 +70,7 @@ function main() {
 		type: 'unknown_type',
 		data: 'foo',
 	});
-	console.log('Invalid event accepted?', invalidEvent.success); // false
+	console.log('Invalid event accepted?', invalidEvent.success); // False
 
 	// --- 4. Config validation ---
 	console.log('\n--- Config validation ---');
