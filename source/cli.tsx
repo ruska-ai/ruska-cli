@@ -199,7 +199,6 @@ async function main() {
 				json: cli.flags.json,
 				assistantId,
 				threadId,
-				tools: cli.flags.tools,
 				truncateOptions: cli.flags.fullOutput
 					? undefined
 					: {

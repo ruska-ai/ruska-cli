@@ -14,13 +14,23 @@ export type ChunkOutput = {
 };
 
 /**
- * Tool call event (for future use)
+ * Tool call event
  */
 export type ToolCallOutput = {
 	type: 'tool_call';
 	id: string;
 	name: string;
 	args: Record<string, unknown>;
+};
+
+/**
+ * Tool result event
+ */
+export type ToolResultOutput = {
+	type: 'tool_result';
+	toolCallId: string;
+	content: string;
+	isError?: boolean;
 };
 
 /**
@@ -61,5 +71,6 @@ export type ErrorCode =
 export type StreamOutput =
 	| ChunkOutput
 	| ToolCallOutput
+	| ToolResultOutput
 	| DoneOutput
 	| ErrorOutput;

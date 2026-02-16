@@ -8,10 +8,7 @@ import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {render, Text, Box, useApp} from 'ink';
 import Spinner from 'ink-spinner';
 import {
-	extractContent,
 	type Config,
-	type StreamRequest,
-	type ValuesPayload,
 } from '../types/index.js';
 import {loadConfig} from '../lib/config.js';
 import {OutputFormatter} from '../lib/output/formatter.js';
@@ -22,7 +19,6 @@ import {
 	StreamConnectionError,
 } from '../lib/services/stream-service.js';
 import {truncate, type TruncateOptions} from '../lib/output/truncate.js';
-import {parseToolsFlag, buildToolsArray} from '../lib/tools.js';
 import {
 	BashConsentPrompt,
 	BashResultDisplay,
@@ -41,7 +37,6 @@ type ChatCommandProperties = {
 	readonly isJsonMode: boolean;
 	readonly assistantId?: string;
 	readonly threadId?: string;
-	readonly tools?: string[];
 	readonly truncateOptions?: TruncateOptions;
 	readonly isBashEnabled?: boolean;
 	readonly isAutoApprove?: boolean;
@@ -106,7 +101,7 @@ function ChatCommandTui({
 	isBashEnabled = false,
 	isAutoApprove = false,
 	bashTimeout = defaultTimeoutMs,
-}: Omit<ChatCommandProperties, 'isJsonMode' | 'tools'>) {
+}: Omit<ChatCommandProperties, 'isJsonMode'>) {
 	const {exit} = useApp();
 	const [config, setConfig] = useState<Config | undefined>();
 	const [authError, setAuthError] = useState(false);
@@ -389,15 +384,46 @@ function ChatCommandTui({
 }
 
 /**
- * JSON mode chat command - direct streaming without React hooks
- * Outputs NDJSON for downstream consumption
+ * Write an agent event to stdout as NDJSON.
  */
-async function runJsonMode(
-	message: string,
-	assistantId?: string,
-	threadId?: string,
-	tools?: string[],
-): Promise<void> {
+function writeEventAsNdjson(event: AgentEvent, formatter: OutputFormatter): void {
+	switch (event.type) {
+		case 'model_response': {
+			if (event.result.content) {
+				writeJson(formatter.chunk(event.result.content));
+			}
+
+			break;
+		}
+
+		case 'tool_result': {
+			writeJson({
+				type: 'tool_result',
+				toolCallId: event.result.toolCallId,
+				content: event.result.content,
+				isError: event.result.isError,
+			});
+			break;
+		}
+
+		default: {
+			break;
+		}
+	}
+}
+
+/**
+ * JSON mode chat command — uses the core agent runner.
+ * Outputs NDJSON for downstream consumption with bash tool support.
+ */
+async function runJsonMode(options: {
+	message: string;
+	assistantId?: string;
+	threadId?: string;
+	isBashEnabled?: boolean;
+	isAutoApprove?: boolean;
+	bashTimeout?: number;
+}): Promise<void> {
 	const config = await loadConfig();
 
 	if (!config) {
@@ -414,62 +440,39 @@ async function runJsonMode(
 
 	const service = new StreamService(config);
 	const formatter = new OutputFormatter();
-	let finalResponse: ValuesPayload | undefined;
 
 	try {
-		// Snake_case properties match backend API
-		/* eslint-disable @typescript-eslint/naming-convention */
-		const request: StreamRequest = {
-			input: {messages: [{role: 'user', content: message}]},
-			tools,
-			metadata: {
-				...(assistantId && {assistant_id: assistantId}),
-				...(threadId && {thread_id: threadId}),
-			},
-		};
-		/* eslint-enable @typescript-eslint/naming-convention */
+		const runner = await createAgentRunner({
+			input: options.message,
+			service,
+			systemPrompt: 'You are a helpful assistant.',
+			maxIterations: 10,
+			maxErrors: 3,
+			enableBash: options.isBashEnabled ?? false,
+			autoApprove: options.isAutoApprove ?? false,
+			bashTimeout: options.bashTimeout,
+			model: undefined,
+			assistantId: options.assistantId,
+			threadId: options.threadId,
+			// In piped mode: auto-approve if flag set, otherwise deny
+			consentHandler: options.isBashEnabled && !options.isAutoApprove
+				? async () => ({approved: false, reason: 'Denied in non-interactive mode'})
+				: undefined,
+		});
 
-		const handle = await service.connect(request);
-
-		for await (const event of handle.events) {
-			switch (event.type) {
-				case 'messages': {
-					// Output content chunks as NDJSON
-					const text = extractContent(event.payload[0]?.content);
-
-					if (text) {
-						writeJson(formatter.chunk(text));
-					}
-
-					// NOTE: Ignoring tool_calls per requirements
-					break;
-				}
-
-				case 'values': {
-					// CRITICAL: Capture complete response
-					finalResponse = event.payload;
-					break;
-				}
-
-				case 'error': {
-					writeJson(formatter.error('SERVER_ERROR', event.payload.message));
-					process.exitCode = exitCodes.serverError;
-					return;
-				}
-
-				default: {
-					// Unknown event type - ignore
-					break;
-				}
+		// Consume the async generator, mapping events to NDJSON
+		let done = false;
+		while (!done) {
+			// eslint-disable-next-line no-await-in-loop
+			const result = await runner.next();
+			if (result.done) {
+				done = true;
+				writeJson(formatter.done({messages: [
+					{role: 'assistant', content: formatter.getAccumulated()},
+				]}));
+			} else {
+				writeEventAsNdjson(result.value, formatter);
 			}
-		}
-
-		// Output final done event with complete response
-		if (finalResponse) {
-			writeJson(formatter.done(finalResponse));
-		} else {
-			// No values event received - output minimal done event
-			writeJson(formatter.done({messages: []}));
 		}
 
 		process.exitCode = exitCodes.success;
@@ -490,7 +493,6 @@ function ChatCommand({
 	isJsonMode,
 	assistantId,
 	threadId,
-	tools,
 	truncateOptions,
 	isBashEnabled,
 	isAutoApprove,
@@ -501,11 +503,18 @@ function ChatCommand({
 	useEffect(() => {
 		if (isJsonMode) {
 			// JSON mode runs outside React, just exit immediately
-			void runJsonMode(message, assistantId, threadId, tools).finally(() => {
+			void runJsonMode({
+				message,
+				assistantId,
+				threadId,
+				isBashEnabled,
+				isAutoApprove,
+				bashTimeout,
+			}).finally(() => {
 				exit();
 			});
 		}
-	}, [message, isJsonMode, assistantId, threadId, tools, exit]);
+	}, [message, isJsonMode, assistantId, threadId, isBashEnabled, isAutoApprove, bashTimeout, exit]);
 
 	// JSON mode: no UI (handled in useEffect)
 	if (isJsonMode) {
@@ -535,7 +544,6 @@ export async function runChatCommand(
 		json?: boolean;
 		assistantId?: string;
 		threadId?: string;
-		tools?: string;
 		truncateOptions?: TruncateOptions;
 		enableBash?: boolean;
 		autoApprove?: boolean;
@@ -545,19 +553,12 @@ export async function runChatCommand(
 	// Auto-detect: use JSON mode if not TTY (piped) or explicitly requested
 	const isJsonMode = options.json ?? !checkIsTty();
 
-	// Parse tools flag (undefined = defaults, 'disabled' = [], 'a,b' = ['a', 'b'])
-	const parsedTools = parseToolsFlag(options.tools);
-
-	// Build tools array with bash_tool if enabled
-	const tools = buildToolsArray(options.enableBash ?? false, parsedTools);
-
 	const {waitUntilExit} = render(
 		<ChatCommand
 			message={message}
 			isJsonMode={isJsonMode}
 			assistantId={options.assistantId}
 			threadId={options.threadId}
-			tools={tools}
 			truncateOptions={options.truncateOptions}
 			isBashEnabled={options.enableBash}
 			isAutoApprove={options.autoApprove}

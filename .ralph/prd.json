@@ -400,7 +400,7 @@
         "Typecheck passes"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3B — blocked by US-019. Independent of US-020. Enables bash in JSON/piped mode."
     },
     {

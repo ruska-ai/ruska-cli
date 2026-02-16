@@ -251,4 +251,30 @@ Started: Sat Feb 14 19:14:28 MST 2026
   - XO `unicorn/prefer-set-has` requires `new Set(array.map(...))` + `.has()` instead of `array.includes()` when checking membership across multiple values
   - Mock `StreamServiceInterface` for runner tests needs to return multiple response sets (one per model call) — use a `callIndex` counter pattern
   - Auto-approve works by simply not adding the consent middleware to the stack — the bash tool still executes, just without the consent gate
+- ConsentHandler bridge for React: set state with `{command, risk, warnings, resolve}` — UI callbacks call `resolve()` to unblock the core middleware Promise
+- `AsyncGenerator<YieldType, ReturnType>`: use `if (result.done)` to narrow `result.value` to `ReturnType` in TypeScript
+---
+
+## 2026-02-16 - US-020
+- What was implemented: Rewrote `ChatCommandTui` in `source/commands/chat.tsx` to use `createAgentRunner()` from the core module. Replaced ~345 lines of ad-hoc orchestration (useBashConsent hook, manual tool call detection, continueConversation, processedToolCalls, groupMessagesIntoBlocks, extractModelFromEvents, useStream) with ~204 lines that delegate to the core agent loop. Net reduction of ~141 lines.
+- Files changed: source/commands/chat.tsx (modified), .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - ConsentHandler bridge pattern: core middleware returns a `Promise<ConsentDecision>` — set React state with `{command, risk, warnings, resolve}`, then UI callbacks call `resolve()` to unblock the middleware
+  - `AsyncGenerator<AgentEvent, AgentState>` return type: use `if (result.done)` to narrow `result.value` to `AgentState` — TypeScript only narrows inside the `done` branch
+  - XO does NOT reject `as Type` casts in this context — but the narrowing approach (`if (result.done) { const s: AgentState = result.value }`) is cleaner
+  - `useRef(new Map<string, ...>())` is the pattern for correlating tool_call args with tool_result events across the generator stream
+  - `processEvent` callback with `useCallback(fn, [])` (stable reference) is safe because it only uses `useRef` and state setters (all stable)
+  - The BashBlockedPrompt component is no longer needed in TUI — blocked commands are handled internally by the consent middleware (returns false → skipped by agent loop)
+  - The `useStream` hook and `useBashConsent` hook are no longer imported by chat.tsx — they remain available for other consumers
+---
+
+## 2026-02-16 - US-021
+- What was implemented: Rewrote `runJsonMode()` in `source/commands/chat.tsx` to use `createAgentRunner()` from the core module. Replaced the old `StreamService.connect()` + manual event loop with the core runner's async generator. Added `writeEventAsNdjson()` helper to map `AgentEvent` types to NDJSON format (`model_response` → chunk, `tool_result` → tool_result, done → done). Added `ToolResultOutput` type to `source/types/output.ts`. Removed unused `tools` prop from `ChatCommandProperties`, removed `parseToolsFlag`/`buildToolsArray` imports, and removed unused `extractContent`/`StreamRequest`/`ValuesPayload` imports. Updated `source/cli.tsx` to stop passing `tools` to `runChatCommand`. JSON mode now supports bash tool execution (previously impossible).
+- Files changed: source/commands/chat.tsx (modified), source/types/output.ts (modified), source/cli.tsx (modified), .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - XO `max-depth` limits nesting to 4 levels — extract switch statements from deeply nested generator consumption loops into helper functions (e.g., `writeEventAsNdjson()`)
+  - In piped/JSON mode, bash consent handler should auto-deny (no interactive prompt available) — use `async () => ({approved: false, reason: 'Denied in non-interactive mode'})`
+  - The `ToolResultOutput` type was added to `source/types/output.ts` — it matches the core `ToolResult` shape with `toolCallId`, `content`, and optional `isError`
+  - Removing the `tools` prop from `ChatCommandProperties` is safe — the core runner handles tool registration internally via `enableBash` flag
+  - The `formatter.done()` in JSON mode constructs a synthetic `ValuesPayload` from the accumulated content since the core runner doesn't produce backend `values` events
 ---
